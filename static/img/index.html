@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>First Pour – First pour of something greater</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="First Pour – First pour of something greater. Crafted in Colesberg, South Africa."
+  />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --navy: #111a2f;
+      --navy-deep: #080d1c;
+      --cream: #f6f0e4;
+      --pale: #dde7ea;
+      --gold: #c49a4a;
+      --text-main: #1e2230;
+      --muted: #6c7283;
+      --radius: 18px;
+      --max-width: 980px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at top, #1b2440 0, #050712 52%) fixed,
+        #050712;
+      color: var(--cream);
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+    }
+
+    h1, h2, h3 {
+      font-family: "Playfair Display", Georgia, "Times New Roman", serif;
+      letter-spacing: 0.03em;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .page {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    /* HEADER / HERO */
+    header {
+      padding: 16px 18px;
+      border-radius: 999px;
+      background: rgba(8, 13, 28, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(18px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 999px;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+    }
+
+    .brand-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .brand-text-main {
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      font-weight: 600;
+    }
+
+    .brand-text-sub {
+      font-size: 0.7rem;
+      color: #c6cadb;
+    }
+
+    .header-contact {
+      font-size: 0.8rem;
+      color: #c6cadb;
+      text-align: right;
+    }
+
+    .header-contact a {
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
+
+    .hero {
+      margin-top: 40px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.1fr);
+      gap: 30px;
+      align-items: center;
+    }
+
+    .hero-kicker {
+      font-size: 0.8rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .hero-title {
+      font-size: clamp(2.3rem, 4vw, 3rem);
+      line-height: 1.05;
+      margin-bottom: 10px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(120deg, #fff9e5, #c49a4a, #f4e0aa);
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+
+    .hero-sub {
+      font-size: 0.96rem;
+      color: #d5d7e6;
+      margin-bottom: 18px;
+      max-width: 27rem;
+    }
+
+    .hero-note {
+      font-size: 0.74rem;
+      color: #a6a9bd;
+      margin-top: 4px;
+    }
+
+    .hero-note strong {
+      color: var(--gold);
+    }
+
+    .hero-image {
+      border-radius: var(--radius);
+      background: #f7f5ee;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+    }
+
+    .hero-image img {
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+    }
+
+    /* RANGE STRIP */
+    .range {
+      margin-top: 40px;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .range-item {
+      background: #f7f3e8;
+      border-radius: 14px;
+      padding: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
+      color: var(--text-main);
+    }
+
+    .range-item img {
+      width: 100%;
+      border-radius: 12px;
+      display: block;
+    }
+
+    .range-item p {
+      font-size: 0.8rem;
+      margin-top: 6px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ORDER SECTION */
+    .order-section {
+      margin-top: 44px;
+      background: rgba(8, 13, 28, 0.96);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      padding: 20px 18px 18px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr);
+      gap: 24px;
+    }
+
+    .order-section h2 {
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+
+    .order-section p {
+      font-size: 0.88rem;
+      color: #c1c4d7;
+      margin-bottom: 10px;
+    }
+
+    .order-highlights {
+      font-size: 0.84rem;
+      color: #c1c4d7;
+      margin-top: 8px;
+    }
+
+    .order-highlights span {
+      display: inline-block;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 4px 9px;
+      margin: 3px 6px 0 0;
+      font-size: 0.74rem;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: #c1c4d7;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      margin-top: 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 8px 9px;
+      font-size: 0.86rem;
+      background: rgba(3, 7, 20, 0.95);
+      color: #f7f7ff;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--gold);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .btn-whatsapp {
+      margin-top: 4px;
+      border-radius: 999px;
+      border: 1px solid rgba(196, 154, 74, 0.7);
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      color: #ffffff;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      padding: 9px 18px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-whatsapp span {
+      font-size: 1rem;
+    }
+
+    .form-note {
+      font-size: 0.72rem;
+      color: #9fa3b7;
+    }
+
+    footer {
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.74rem;
+      color: #9fa3b7;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    footer a {
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 840px) {
+      .hero,
+      .order-section,
+      .range {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .hero {
+        margin-top: 32px;
+      }
+
+      .hero-image {
+        order: -1;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-contact {
+        text-align: left;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .range {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      footer {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <!-- HEADER -->
+    <header>
+      <div class="brand">
+        <div class="brand-logo">
+          <img src="logo-first-pour.jpg" alt="First Pour logo" />
+        </div>
+        <div>
+          <div class="brand-text-main">First Pour</div>
+          <div class="brand-text-sub">First pour of something greater</div>
+        </div>
+      </div>
+      <div class="header-contact">
+        Orders &amp; enquiries:<br />
+        <a href="mailto:hello@firstpour.co.za">hello@firstpour.co.za</a>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div>
+        <div class="hero-kicker">Crafted in Colesberg • South Africa</div>
+        <h1 class="hero-title">
+          The <span>First Pour</span> of something greater.
+        </h1>
+        <p class="hero-sub">
+          Classic, quietly confident spirits made for G&amp;Ts on hot afternoons, long dinners and the moments where the first glass sets the tone.
+        </p>
+        <p class="hero-note">
+          <strong>Please enjoy responsibly.</strong> Not for sale to persons under the age of 18.
+        </p>
+      </div>
+      <div class="hero-image">
+        <!-- You can use any of the labels here; gin works nicely -->
+        <img src="first-pour-gin.jpg" alt="First Pour London Dry Gin label" />
+      </div>
+    </section>
+
+    <!-- RANGE STRIP -->
+    <section class="range" aria-label="First Pour range">
+      <div class="range-item">
+        <img src="first-pour-gin.jpg" alt="First Pour London Dry Gin" />
+        <p>London Dry Gin • Crisp · Aromatic · Classic</p>
+      </div>
+      <div class="range-item">
+        <img src="first-pour-vodka.jpg" alt="First Pour Vanilla Vodka" />
+        <p>Vanilla Vodka • Smooth · Sweet · Velvety</p>
+      </div>
+      <div class="range-item">
+        <img src="first-pour-white-wine.jpg" alt="First Pour Sweet White Wine" />
+        <p>Sweet White Wine • Light · Juicy · Sweet</p>
+      </div>
+    </section>
+
+    <!-- ORDER VIA WHATSAPP -->
+    <section class="order-section" id="order">
+      <div>
+        <h2>Order via WhatsApp</h2>
+        <p>
+          Share your details and what you’d like to order. We’ll reply on WhatsApp to confirm stock, price and collection / delivery options.
+        </p>
+        <div class="order-highlights">
+          <span>London Dry Gin 750 ml</span>
+          <span>Vanilla Vodka 750 ml</span>
+          <span>Sweet White Wine 750 ml</span>
+        </div>
+      </div>
+
+      <div>
+        <form id="whatsapp-form">
+          <div>
+            <label for="name">Your name</label>
+            <input id="name" name="name" type="text" required />
+          </div>
+          <div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" required />
+          </div>
+          <div>
+            <label for="product">Product</label>
+            <select id="product" name="product" required>
+              <option value="" disabled selected>Select a product</option>
+              <option>London Dry Gin 750 ml</option>
+              <option>Vanilla Vodka 750 ml</option>
+              <option>Sweet White Wine 750 ml</option>
+              <option>Mixed case / other</option>
+            </select>
+          </div>
+          <div>
+            <label for="quantity">Quantity (bottles)</label>
+            <input id="quantity" name="quantity" type="number" min="1" value="1" required />
+          </div>
+          <div>
+            <label for="message">Notes (optional)</label>
+            <textarea
+              id="message"
+              name="message"
+              placeholder="Delivery area, preferred date, or anything else we should know."
+            ></textarea>
+          </div>
+
+          <button type="submit" class="btn-whatsapp">
+            <span>💬</span> Order on WhatsApp
+          </button>
+
+          <p class="form-note">
+            Submitting will open WhatsApp with your order details pre-filled. You can edit the message before sending.
+          </p>
+        </form>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <div>© <span id="year"></span> First Pour. First pour of something greater.</div>
+      <div>
+        Alcohol reduces driving ability. Please don’t drink and drive.
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    // footer year
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // WhatsApp order handler
+    const form = document.getElementById("whatsapp-form");
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const phone = "27662040471"; // e.g. 27721234567
+
+      const name = encodeURIComponent(document.getElementById("name").value);
+      const email = encodeURIComponent(document.getElementById("email").value);
+      const product = encodeURIComponent(document.getElementById("product").value);
+      const quantity = encodeURIComponent(document.getElementById("quantity").value);
+      const notes = encodeURIComponent(document.getElementById("message").value);
+
+      let text = `Hi, my name is ${name}. I would like to order ${quantity} x ${product} from First Pour.`;
+      if (notes) {
+        text += `%0ANotes: ${notes}`;
+      }
+      text += `%0AEmail: ${email}`;
+
+      const url = `https://wa.me/${phone}?text=${text}`;
+      window.open(url, "_blank");
+    });
+  </script>
+</body>
+</html>
