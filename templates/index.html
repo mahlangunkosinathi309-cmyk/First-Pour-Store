@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>First Pour Store</title>
+  <style>
+    body{font-family:Arial, sans-serif; padding:24px; background:#fff; color:#111;}
+    .card{border:1px solid #ddd; padding:14px; margin:12px 0; border-radius:10px;}
+    button{padding:10px 12px; border-radius:10px; border:1px solid #111; background:#111; color:#fff; cursor:pointer;}
+    input{width:60px; padding:8px; margin-left:8px;}
+  </style>
+</head>
+<body>
+  <h1>First Pour</h1>
+  <p>Store is live locally ✅</p>
+
+  <h2>Products</h2>
+
+  {% for p in products %}
+    <div class="card">
+      <h3>{{ p.name }}</h3>
+      <p><strong>{{ p.display_price }}</strong></p>
+      <label>Qty <input type="number" min="0" value="0" id="qty_{{ p.sku }}"></label>
+      <button onclick="addToCart('{{ p.sku }}')">Add to cart</button>
+    </div>
+  {% endfor %}
+
+  <div class="card">
+    <strong>Cart:</strong> <span id="cartCount">0</span> item(s)
+    <button style="margin-left:12px" onclick="goCheckout()">Checkout</button>
+  </div>
+
+<script>
+  const cart = [];
+  function addToCart(sku){
+    const qty = parseInt(document.getElementById("qty_"+sku).value||"0",10);
+    if(qty<=0){ alert("Choose qty > 0"); return; }
+
+    const idx = cart.findIndex(x=>x.sku===sku);
+    if(idx>=0) cart[idx].qty = qty; else cart.push({sku, qty});
+
+    const totalQty = cart.reduce((s,x)=>s+(x.qty||0),0);
+    document.getElementById("cartCount").innerText = totalQty;
+    alert("Added ✅");
+  }
+  function goCheckout(){
+    const encoded = encodeURIComponent(JSON.stringify(cart));
+    window.location.href = "/checkout?cart="+encoded;
+  }
+</script>
+</body>
+</html>
