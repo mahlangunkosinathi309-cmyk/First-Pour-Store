@@ -1,0 +1,50 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Login - First Pour</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="brand">
+    <img class="logo" src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour logo">
+    <div>
+      <div class="brand-title">FIRST POUR</div>
+      <div class="brand-sub">Admin</div>
+    </div>
+  </div>
+  <a class="header-cta" href="/">Back to store</a>
+</header>
+
+<section class="checkout">
+  <div class="checkout-grid">
+    <div class="panel" style="max-width:520px;">
+      <h2>Admin login</h2>
+      <p class="muted small">Enter your admin key to manage products & pricing.</p>
+
+      {% if error %}
+        <div style="margin:10px 0; padding:10px; border-radius:12px; background:#2a1b1b; border:1px solid #6b2b2b;">
+          <strong style="color:#ffb3b3;">{{ error }}</strong>
+        </div>
+      {% endif %}
+
+      <form method="POST" action="/admin">
+        <label class="muted small">Admin key</label>
+        <input name="key" placeholder="Enter key" />
+        <div style="margin-top:14px;">
+          <button class="btn btn-gold" type="submit">Login</button>
+        </div>
+      </form>
+
+      <p class="muted small" style="margin-top:14px;">
+        Tip: set ADMIN_KEY on Render as an Environment Variable.
+      </p>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

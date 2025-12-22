@@ -1,0 +1,95 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard - First Pour</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    .admin-table { width:100%; border-collapse:collapse; }
+    .admin-table th, .admin-table td { padding:10px; border-bottom:1px solid rgba(255,255,255,.08); vertical-align:top; }
+    .admin-table th { text-align:left; color:rgba(255,255,255,.8); font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+    .admin-table input { width:100%; }
+    .chip { display:inline-block; padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); font-size:12px; }
+  </style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="brand">
+    <img class="logo" src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour logo">
+    <div>
+      <div class="brand-title">FIRST POUR</div>
+      <div class="brand-sub">Admin dashboard</div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px; align-items:center;">
+    <a class="header-cta" href="/">View store</a>
+    <a class="header-cta" href="/admin/logout">Logout</a>
+  </div>
+</header>
+
+<section class="checkout">
+  <div class="checkout-grid">
+    <div class="panel">
+      <h2>Store settings</h2>
+
+      <form method="POST" action="/admin/save">
+        <label class="muted small">Delivery fee (R)</label>
+        <input name="delivery_fee" value="{{ delivery_fee }}" />
+
+        <div style="margin-top:16px;">
+          <h2 style="margin-bottom:6px;">Products</h2>
+          <p class="muted small" style="margin-top:0;">
+            Images must exist in <span class="chip">static/img</span> and names are case-sensitive on Render.
+          </p>
+
+          <table class="admin-table" style="margin-top:12px;">
+            <thead>
+              <tr>
+                <th style="width:110px;">SKU</th>
+                <th>Name</th>
+                <th style="width:210px;">Tagline</th>
+                <th style="width:110px;">Price (R)</th>
+                <th style="width:220px;">Image file</th>
+                <th style="width:90px;">Sort</th>
+                <th style="width:90px;">Active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in products %}
+              <tr>
+                <td>
+                  <strong>{{ p.sku }}</strong>
+                  <input type="hidden" name="sku" value="{{ p.sku }}" />
+                </td>
+                <td><input name="name_{{ p.sku }}" value="{{ p.name }}" /></td>
+                <td><input name="tagline_{{ p.sku }}" value="{{ p.tagline }}" /></td>
+                <td><input name="price_{{ p.sku }}" value="{{ (p.price_cents/100)|round(0)|int }}" /></td>
+                <td><input name="image_{{ p.sku }}" value="{{ p.image }}" /></td>
+                <td><input name="sort_{{ p.sku }}" value="{{ p.sort_order }}" /></td>
+                <td style="text-align:center;">
+                  <input type="checkbox" name="active_{{ p.sku }}" {% if p.active == 1 %}checked{% endif %} />
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-gold" type="submit">Save changes</button>
+            <a class="btn btn-outline" href="/">Back</a>
+          </div>
+
+          <p class="muted small" style="margin-top:14px;">
+            If you change an image name, make sure the file exists in <strong>static/img</strong> and push to GitHub.
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
