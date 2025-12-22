@@ -67,17 +67,18 @@
 
   <div class="grid">
     {% for p in products %}
-    <div class="card">
+    <div class="card" data-sku="{{ p.sku }}">
       <img class="card-img" src="{{ url_for('static', filename='img/' + p.image) }}" alt="{{ p.name }}">
       <div class="card-body">
         <div class="card-title">{{ p.name }}</div>
         <div class="card-sub">{{ p.tagline }}</div>
         <div class="card-price">{{ p.price }}</div>
 
-        <div class="card-row">
-          <label>Qty
-            <input type="number" min="0" value="0" id="qty_{{ p.sku }}">
-          </label>
+        <div class="qty-row">
+          <button class="qty-btn" onclick="changeQty('{{ p.sku }}', -1)">-</button>
+          <div class="qty-box" id="qty_{{ p.sku }}">0</div>
+          <button class="qty-btn" onclick="changeQty('{{ p.sku }}', 1)">+</button>
+
           <button class="btn btn-outline" onclick="addToCart('{{ p.sku }}')">Add</button>
         </div>
       </div>
@@ -90,7 +91,10 @@
       <div class="cart-title">Cart</div>
       <div class="cart-sub"><span id="cartCount">0</span> item(s)</div>
     </div>
-    <button class="btn btn-gold" onclick="goCheckout()">Checkout</button>
+    <div class="cart-actions">
+      <button class="btn btn-outline" onclick="clearCart()">Clear</button>
+      <button class="btn btn-gold" onclick="goCheckout()">Checkout</button>
+    </div>
   </div>
 </section>
 
@@ -100,23 +104,78 @@
 </footer>
 
 <script>
-  const cart = [];
+  // ---------- Cart persistence ----------
+  const STORAGE_KEY = "firstpour_cart_v1";
+
+  function loadCart(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return [];
+      const arr = JSON.parse(raw);
+      if(!Array.isArray(arr)) return [];
+      return arr.filter(x => x && x.sku && Number.isInteger(x.qty) && x.qty > 0);
+    }catch(e){
+      return [];
+    }
+  }
+
+  function saveCart(cart){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
+  }
+
+  let cart = loadCart();
 
   function scrollToShop(){
     document.getElementById("shop").scrollIntoView({behavior:"smooth"});
   }
 
-  function addToCart(sku){
+  function getQty(sku){
     const el = document.getElementById("qty_" + sku);
-    const qty = parseInt(el.value || "0", 10);
-    if(qty <= 0){ alert("Choose qty greater than 0"); return; }
+    return parseInt(el.innerText || "0", 10);
+  }
+
+  function setQty(sku, qty){
+    const el = document.getElementById("qty_" + sku);
+    el.innerText = String(Math.max(0, qty));
+  }
+
+  function changeQty(sku, delta){
+    const current = getQty(sku);
+    setQty(sku, current + delta);
+  }
+
+  function addToCart(sku){
+    const qty = getQty(sku);
+    if(qty <= 0){
+      alert("Qty must be 1 or more.");
+      return;
+    }
 
     const idx = cart.findIndex(x => x.sku === sku);
     if(idx >= 0) cart[idx].qty = qty;
     else cart.push({sku: sku, qty: qty});
 
+    saveCart(cart);
+    refreshCartUI();
+  }
+
+  function clearCart(){
+    cart = [];
+    saveCart(cart);
+    // reset all qty boxes to 0
+    document.querySelectorAll(".qty-box").forEach(el => el.innerText = "0");
+    refreshCartUI();
+  }
+
+  function refreshCartUI(){
     const totalQty = cart.reduce((s,x)=>s+(x.qty||0),0);
     document.getElementById("cartCount").innerText = totalQty;
+  }
+
+  function syncQtyBoxesFromCart(){
+    // set qty boxes based on saved cart
+    cart.forEach(item => setQty(item.sku, item.qty));
+    refreshCartUI();
   }
 
   function goCheckout(){
@@ -127,6 +186,9 @@
     const encoded = encodeURIComponent(JSON.stringify(cart));
     window.location.href = "/checkout?cart=" + encoded;
   }
+
+  // On page load: restore quantities + cart count
+  syncQtyBoxesFromCart();
 </script>
 
 </body>

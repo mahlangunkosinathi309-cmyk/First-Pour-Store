@@ -146,23 +146,6 @@ body{
 .card-sub{color:var(--muted); font-size:13px; margin-top:4px}
 .card-price{color:var(--gold); font-weight:900; margin-top:10px; margin-bottom:12px}
 
-.card-row{display:flex; gap:10px; align-items:center; justify-content:space-between}
-
-label{color:var(--muted); font-size:13px}
-
-input, textarea, select{
-  width:100%;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.14);
-  background: rgba(3,7,20,.85);
-  color:var(--text);
-  padding:10px 10px;
-  outline:none;
-}
-
-input[type="number"]{width:100px}
-textarea{min-height:100px; resize:vertical}
-
 .btn{
   border-radius:999px;
   padding:10px 14px;
@@ -183,6 +166,36 @@ textarea{min-height:100px; resize:vertical}
   color:#14151c;
 }
 
+/* Qty controls */
+.qty-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  justify-content:space-between;
+}
+
+.qty-btn{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(3,7,20,.85);
+  color: var(--text);
+  font-size:18px;
+  cursor:pointer;
+}
+
+.qty-box{
+  min-width:44px;
+  text-align:center;
+  padding:9px 10px;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(3,7,20,.85);
+  color: var(--text);
+  font-weight:800;
+}
+
 .cartbar{
   margin-top:14px;
   background: rgba(8,13,28,.85);
@@ -196,6 +209,7 @@ textarea{min-height:100px; resize:vertical}
 }
 .cart-title{font-weight:800}
 .cart-sub{color:var(--muted); font-size:13px}
+.cart-actions{display:flex; gap:10px; flex-wrap:wrap}
 
 .checkout{
   max-width:1100px;
@@ -241,6 +255,17 @@ textarea{min-height:100px; resize:vertical}
   font-size:16px;
 }
 .total strong{color:var(--gold)}
+
+input, textarea, select{
+  width:100%;
+  border-radius:12px;
+  border:1px solid rgba(255,255,255,.14);
+  background: rgba(3,7,20,.85);
+  color:var(--text);
+  padding:10px 10px;
+  outline:none;
+}
+textarea{min-height:100px; resize:vertical}
 
 .footer{
   max-width:1100px;
