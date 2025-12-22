@@ -18,114 +18,107 @@
   </div>
 
   <a class="header-cta" href="/" >
-    Back to store<br><strong>Home</strong>
+    Back to store
   </a>
 </header>
 
 <section class="checkout">
   <div class="checkout-grid">
-
     <div class="panel">
-      <h2>Order Summary</h2>
-
+      <h2>Your order</h2>
       {% if lines|length == 0 %}
         <p class="muted">Your cart is empty. Go back and add products.</p>
       {% else %}
         <ul class="summary">
-          {% for ln in lines %}
+          {% for L in lines %}
             <li>
-              <span>{{ ln.qty }} x {{ ln.name }}</span>
-              <strong>R{{ "%.2f"|format(ln.line_cents / 100) }}</strong>
+              <div><strong>{{ L.name }}</strong><br><span class="muted small">x{{ L.qty }} · {{ L.unit_price }}</span></div>
+              <div><strong>{{ L.line_total }}</strong></div>
             </li>
           {% endfor %}
         </ul>
 
         <div class="total-row">
-          <span>Subtotal</span>
-          <strong id="subtotalText">R{{ "%.2f"|format(subtotal_cents / 100) }}</strong>
+          <div>Subtotal</div>
+          <div><strong>R{{ (subtotal_cents/100)|round(0)|int }}</strong></div>
         </div>
 
-        <div class="total-row">
-          <span>Delivery</span>
-          <strong id="deliveryText">R0.00</strong>
+        <div class="total-row" id="feeRow">
+          <div id="feeLabel">Pickup</div>
+          <div id="feeValue"><strong>Free</strong></div>
         </div>
 
         <div class="total">
-          <span>Total</span>
-          <strong id="totalText">R{{ "%.2f"|format(subtotal_cents / 100) }}</strong>
+          <div><strong>Total</strong></div>
+          <div><strong id="totalValue">R{{ (subtotal_cents/100)|round(0)|int }}</strong></div>
         </div>
-
-        <p class="muted small">Payment: EFT / Cash for now (Yoco can be added later).</p>
       {% endif %}
+      <p class="muted small" style="margin-top:12px;">
+        We confirm delivery & payment on WhatsApp. (Yoco coming soon)
+      </p>
     </div>
 
     <div class="panel">
-      <h2>Delivery Details</h2>
+      <h2>Customer details</h2>
 
-      {% if lines|length == 0 %}
-        <p class="muted">Nothing to checkout.</p>
-      {% else %}
-      <form method="POST" action="/checkout">
-        <input type="hidden" name="cart_raw" value='{{ cart_raw }}'>
-        <input type="hidden" id="delivery_method" name="delivery_method" value="pickup">
+      <form method="POST" action="/place-order">
+        <input type="hidden" name="cart_raw" value="{{ cart_raw }}"/>
 
-        <label>Name</label>
-        <input name="name" required>
+        <label class="muted small">Full name</label>
+        <input name="name" placeholder="e.g. Emmanuel" />
 
-        <label>Phone</label>
-        <input name="phone" required>
+        <label class="muted small" style="margin-top:10px;">Phone number</label>
+        <input name="phone" placeholder="e.g. 07X XXX XXXX" />
 
-        <label>Method</label>
-        <select id="methodSelect" onchange="updateDelivery()">
-          <option value="pickup">Pickup (R0)</option>
-          <option value="delivery">Delivery (R{{ "%.0f"|format(delivery_fee_cents / 100) }})</option>
+        <label class="muted small" style="margin-top:10px;">Delivery method</label>
+        <select name="method" id="method" onchange="updateFee()">
+          <option value="pickup">Pickup (Free)</option>
+          <option value="delivery">Delivery (R80)</option>
         </select>
 
-        <div id="addressWrap" style="display:none;">
-          <label>Address</label>
-          <textarea name="address" id="addressBox"></textarea>
+        <div id="addressBox" style="margin-top:10px; display:none;">
+          <label class="muted small">Delivery address</label>
+          <textarea name="address" placeholder="Street, suburb, city"></textarea>
         </div>
 
-        <button class="btn btn-gold" type="submit">Place Order on WhatsApp</button>
-        <p class="muted small">We will confirm delivery and payment on WhatsApp.</p>
+        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="submit" class="btn btn-gold">Send order on WhatsApp</button>
+          <a class="btn btn-outline" href="/">Back</a>
+        </div>
       </form>
-      {% endif %}
-    </div>
 
+      <p class="muted small" style="margin-top:14px;">
+        Not for sale to persons under the age of 18. Please drink responsibly.
+      </p>
+    </div>
   </div>
 </section>
 
 <script>
-  const subtotal = {{ subtotal_cents }};
-  const deliveryFee = {{ delivery_fee_cents }};
+  const subtotal = {{ (subtotal_cents/100)|round(0)|int }};
+  const deliveryFee = {{ (delivery_fee_cents/100)|round(0)|int }};
 
-  function centsToRand(c){
-    return "R" + (c/100).toFixed(2);
-  }
+  function updateFee(){
+    const method = document.getElementById("method").value;
+    const feeLabel = document.getElementById("feeLabel");
+    const feeValue = document.getElementById("feeValue");
+    const totalValue = document.getElementById("totalValue");
+    const addressBox = document.getElementById("addressBox");
 
-  function updateDelivery(){
-    const method = document.getElementById("methodSelect").value;
-    document.getElementById("delivery_method").value = method;
-
-    const addressWrap = document.getElementById("addressWrap");
-    const addressBox  = document.getElementById("addressBox");
-
-    let delivery = 0;
     if(method === "delivery"){
-      delivery = deliveryFee;
-      addressWrap.style.display = "block";
-      addressBox.required = true;
+      feeLabel.innerText = "Delivery";
+      feeValue.innerHTML = "<strong>R" + deliveryFee + "</strong>";
+      totalValue.innerText = "R" + (subtotal + deliveryFee);
+      addressBox.style.display = "block";
     } else {
-      addressWrap.style.display = "none";
-      addressBox.required = false;
-      addressBox.value = "";
+      feeLabel.innerText = "Pickup";
+      feeValue.innerHTML = "<strong>Free</strong>";
+      totalValue.innerText = "R" + subtotal;
+      addressBox.style.display = "none";
     }
-
-    document.getElementById("deliveryText").innerText = centsToRand(delivery);
-    document.getElementById("totalText").innerText = centsToRand(subtotal + delivery);
   }
 
-  updateDelivery();
+  updateFee();
 </script>
 
 </body>

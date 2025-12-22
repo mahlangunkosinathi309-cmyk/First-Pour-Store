@@ -1,161 +1,176 @@
 ﻿# -*- coding: utf-8 -*-
 from flask import Flask, render_template, request, redirect, url_for
-import os, json
-from urllib.parse import quote
+from datetime import datetime
+import json
+import uuid
+import urllib.parse
 
 app = Flask(__name__)
 
-WHATSAPP_NUMBER = os.getenv("WHATSAPP_NUMBER", "27645277314")
-
-DELIVERY_FEE_CENTS = 8000  # R80.00
+# --- CONFIG ---
+WHATSAPP_NUMBER = "27645277314"  # no +, country code first (South Africa: 27)
 
 PRODUCTS = [
     {
-        "sku": "GIN_LONDON_DRY",
+        "sku": "GIN",
         "name": "London Dry Gin",
+        "tagline": "Crisp · Aromatic · Classic",
         "price_cents": 35000,
         "price": "R350",
-        "tagline": "Crisp - Aromatic - Classic",
         "image": "first-pour-gin.jpg",
     },
     {
-        "sku": "VODKA_VANILLA",
+        "sku": "VODKA",
         "name": "Vanilla Vodka",
+        "tagline": "Smooth · Sweet · Velvety",
         "price_cents": 35000,
         "price": "R350",
-        "tagline": "Smooth - Sweet - Velvety",
         "image": "first-pour-vodka.jpg",
     },
     {
-        "sku": "WINE_SWEET_WHITE",
+        "sku": "WHITE_WINE",
         "name": "Sweet White Wine",
+        "tagline": "Light · Juicy · Sweet",
         "price_cents": 20000,
         "price": "R200",
-        "tagline": "Light - Juicy - Sweet",
         "image": "first-pour-white-wine.jpg",
+    },
+    {
+        "sku": "RED_WINE",
+        "name": "Sweet Red Wine",
+        "tagline": "Smooth · Juicy · Sweet",
+        "price_cents": 20000,
+        "price": "R200",
+        "image": "first-pour-white-wine.jpg",  # placeholder image (replace later)
     },
 ]
 
-def find_product(sku: str):
-    for p in PRODUCTS:
-        if p["sku"] == sku:
-            return p
-    return None
+SKU_MAP = {p["sku"]: p for p in PRODUCTS}
 
-def normalize_cart(raw_items):
-    items = []
-    for it in raw_items:
-        sku = str(it.get("sku", "")).strip()
-        try:
-            qty = int(it.get("qty", 0))
-        except Exception:
-            qty = 0
-        if not sku or qty <= 0:
-            continue
-        p = find_product(sku)
-        if not p:
-            continue
-        items.append({"sku": sku, "qty": qty})
-    return items
 
-def calc_lines(items):
+def safe_parse_cart(cart_str: str):
+    """
+    cart_str is urlencoded JSON like: [{"sku":"GIN","qty":2}, ...]
+    """
+    if not cart_str:
+        return []
+    try:
+        decoded = urllib.parse.unquote(cart_str)
+        data = json.loads(decoded)
+        if not isinstance(data, list):
+            return []
+        cleaned = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            sku = str(item.get("sku", "")).strip()
+            qty = item.get("qty", 0)
+            if sku in SKU_MAP and isinstance(qty, int) and qty > 0:
+                cleaned.append({"sku": sku, "qty": qty})
+        return cleaned
+    except Exception:
+        return []
+
+
+def cart_to_lines(cart):
     lines = []
-    subtotal_cents = 0
-    for it in items:
-        p = find_product(it["sku"])
-        if not p:
-            continue
-        qty = it["qty"]
-        line_cents = p["price_cents"] * qty
-        subtotal_cents += line_cents
-        lines.append({
-            "sku": p["sku"],
-            "name": p["name"],
-            "qty": qty,
-            "unit_cents": p["price_cents"],
-            "line_cents": line_cents,
-        })
-    return lines, subtotal_cents
+    subtotal = 0
+    for item in cart:
+        p = SKU_MAP[item["sku"]]
+        qty = item["qty"]
+        line_total = p["price_cents"] * qty
+        subtotal += line_total
+        lines.append(
+            {
+                "sku": item["sku"],
+                "name": p["name"],
+                "qty": qty,
+                "unit_price": p["price"],
+                "line_total_cents": line_total,
+                "line_total": f"R{line_total/100:.0f}",
+            }
+        )
+    return lines, subtotal
+
 
 @app.route("/")
 def index():
+    return render_template("index.html", products=PRODUCTS, whatsapp_number=WHATSAPP_NUMBER)
+
+
+@app.route("/checkout")
+def checkout():
+    cart_raw = request.args.get("cart", "")
+    cart = safe_parse_cart(cart_raw)
+    lines, subtotal = cart_to_lines(cart)
+
+    # defaults
+    delivery_fee_cents = 8000  # R80
+    pickup_fee_cents = 0
+
     return render_template(
-        "index.html",
-        products=PRODUCTS,
+        "checkout.html",
         whatsapp_number=WHATSAPP_NUMBER,
+        cart_raw=cart_raw,
+        cart=cart,
+        lines=lines,
+        subtotal_cents=subtotal,
+        delivery_fee_cents=delivery_fee_cents,
+        pickup_fee_cents=pickup_fee_cents,
     )
 
-@app.route("/checkout", methods=["GET", "POST"])
-def checkout():
-    if request.method == "GET":
-        cart_json = request.args.get("cart", "[]")
-        try:
-            raw_items = json.loads(cart_json)
-        except Exception:
-            raw_items = []
 
-        items = normalize_cart(raw_items)
-        lines, subtotal_cents = calc_lines(items)
+@app.route("/place-order", methods=["POST"])
+def place_order():
+    name = request.form.get("name", "").strip()
+    phone = request.form.get("phone", "").strip()
+    method = request.form.get("method", "pickup").strip()  # pickup | delivery
+    address = request.form.get("address", "").strip()
 
-        return render_template(
-            "checkout.html",
-            lines=lines,
-            subtotal_cents=subtotal_cents,
-            delivery_fee_cents=DELIVERY_FEE_CENTS,
-            cart_raw=json.dumps(items),
-            whatsapp_number=WHATSAPP_NUMBER,
-        )
+    cart_raw = request.form.get("cart_raw", "")
+    cart = safe_parse_cart(cart_raw)
 
-    # POST
-    name = (request.form.get("name") or "").strip()
-    phone = (request.form.get("phone") or "").strip()
-    address = (request.form.get("address") or "").strip()
-    delivery_method = (request.form.get("delivery_method") or "pickup").strip().lower()
-    cart_raw = request.form.get("cart_raw") or "[]"
+    if not cart:
+        return redirect(url_for("checkout", cart=cart_raw))
 
-    try:
-        raw_items = json.loads(cart_raw)
-    except Exception:
-        raw_items = []
+    lines, subtotal = cart_to_lines(cart)
 
-    items = normalize_cart(raw_items)
-    lines, subtotal_cents = calc_lines(items)
+    delivery_fee_cents = 8000  # R80
+    total_cents = subtotal + (delivery_fee_cents if method == "delivery" else 0)
 
-    if subtotal_cents <= 0:
-        return redirect(url_for("index"))
+    order_id = uuid.uuid4().hex[:8].upper()
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    delivery_fee = 0
-    delivery_label = "Pickup"
-    if delivery_method == "delivery":
-        delivery_fee = DELIVERY_FEE_CENTS
-        delivery_label = "Delivery"
-
-    total_cents = subtotal_cents + delivery_fee
-
+    # Build WhatsApp message (clean, readable)
     msg_lines = []
-    msg_lines.append("FIRST POUR ORDER")
+    msg_lines.append(f"🍸 *FIRST POUR ORDER*")
+    msg_lines.append(f"*Order ID:* {order_id}")
+    msg_lines.append(f"*Time:* {ts}")
     msg_lines.append("")
-    msg_lines.append("Customer:")
-    msg_lines.append(f"Name: {name}")
-    msg_lines.append(f"Phone: {phone}")
-    msg_lines.append(f"Delivery: {delivery_label}")
-    if delivery_label == "Delivery":
-        msg_lines.append(f"Address: {address}")
+    msg_lines.append(f"*Customer:* {name if name else 'N/A'}")
+    msg_lines.append(f"*Phone:* {phone if phone else 'N/A'}")
     msg_lines.append("")
-    msg_lines.append("Items:")
-    for ln in lines:
-        rands = ln["line_cents"] / 100.0
-        msg_lines.append(f"- {ln['qty']} x {ln['name']} = R{rands:.2f}")
+    msg_lines.append("*Items:*")
+    for L in lines:
+        msg_lines.append(f"- {L['name']} x{L['qty']} ({L['unit_price']}) = {L['line_total']}")
     msg_lines.append("")
-    msg_lines.append(f"SUBTOTAL: R{(subtotal_cents/100.0):.2f}")
-    msg_lines.append(f"DELIVERY: R{(delivery_fee/100.0):.2f}")
-    msg_lines.append(f"TOTAL: R{(total_cents/100.0):.2f}")
-    msg_lines.append("")
-    msg_lines.append("Payment: EFT / Cash (Yoco coming soon)")
+    msg_lines.append(f"*Subtotal:* R{subtotal/100:.0f}")
 
-    msg = "\n".join(msg_lines)
-    wa_url = f"https://wa.me/{WHATSAPP_NUMBER}?text={quote(msg)}"
+    if method == "delivery":
+        msg_lines.append(f"*Delivery:* R{delivery_fee_cents/100:.0f}")
+        msg_lines.append(f"*Address:* {address if address else 'N/A'}")
+    else:
+        msg_lines.append(f"*Pickup:* Free")
+
+    msg_lines.append(f"*Total:* R{total_cents/100:.0f}")
+    msg_lines.append("")
+    msg_lines.append("✅ Please confirm availability & payment method.")
+    msg_lines.append("(Yoco coming soon)")
+
+    message = "\n".join(msg_lines)
+    wa_url = f"https://wa.me/{WHATSAPP_NUMBER}?text={urllib.parse.quote(message)}"
     return redirect(wa_url)
+
 
 if __name__ == "__main__":
     app.run(debug=True)
