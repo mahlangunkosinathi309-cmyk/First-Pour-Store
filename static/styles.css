@@ -3,7 +3,6 @@
 :root{
   --bg:#050712;
   --panel:#0c1020;
-  --panel2:#0a0e1b;
   --gold:#d7b56d;
   --text:#f2f2f5;
   --muted:#a7a8b6;
@@ -148,8 +147,10 @@ body{
 .card-price{color:var(--gold); font-weight:900; margin-top:10px; margin-bottom:12px}
 
 .card-row{display:flex; gap:10px; align-items:center; justify-content:space-between}
+
 label{color:var(--muted); font-size:13px}
-input, textarea{
+
+input, textarea, select{
   width:100%;
   border-radius:12px;
   border:1px solid rgba(255,255,255,.14);
@@ -158,6 +159,7 @@ input, textarea{
   padding:10px 10px;
   outline:none;
 }
+
 input[type="number"]{width:100px}
 textarea{min-height:100px; resize:vertical}
 
@@ -225,6 +227,12 @@ textarea{min-height:100px; resize:vertical}
   gap:10px;
   padding:10px 0;
   border-bottom:1px solid rgba(255,255,255,.08);
+}
+.total-row{
+  display:flex;
+  justify-content:space-between;
+  margin-top:10px;
+  color:#d6d7e3;
 }
 .total{
   display:flex;

@@ -40,9 +40,19 @@
           {% endfor %}
         </ul>
 
+        <div class="total-row">
+          <span>Subtotal</span>
+          <strong id="subtotalText">R{{ "%.2f"|format(subtotal_cents / 100) }}</strong>
+        </div>
+
+        <div class="total-row">
+          <span>Delivery</span>
+          <strong id="deliveryText">R0.00</strong>
+        </div>
+
         <div class="total">
           <span>Total</span>
-          <strong>R{{ "%.2f"|format(total_cents / 100) }}</strong>
+          <strong id="totalText">R{{ "%.2f"|format(subtotal_cents / 100) }}</strong>
         </div>
 
         <p class="muted small">Payment: EFT / Cash for now (Yoco can be added later).</p>
@@ -57,6 +67,7 @@
       {% else %}
       <form method="POST" action="/checkout">
         <input type="hidden" name="cart_raw" value='{{ cart_raw }}'>
+        <input type="hidden" id="delivery_method" name="delivery_method" value="pickup">
 
         <label>Name</label>
         <input name="name" required>
@@ -64,8 +75,16 @@
         <label>Phone</label>
         <input name="phone" required>
 
-        <label>Address</label>
-        <textarea name="address" required></textarea>
+        <label>Method</label>
+        <select id="methodSelect" onchange="updateDelivery()">
+          <option value="pickup">Pickup (R0)</option>
+          <option value="delivery">Delivery (R{{ "%.0f"|format(delivery_fee_cents / 100) }})</option>
+        </select>
+
+        <div id="addressWrap" style="display:none;">
+          <label>Address</label>
+          <textarea name="address" id="addressBox"></textarea>
+        </div>
 
         <button class="btn btn-gold" type="submit">Place Order on WhatsApp</button>
         <p class="muted small">We will confirm delivery and payment on WhatsApp.</p>
@@ -75,6 +94,39 @@
 
   </div>
 </section>
+
+<script>
+  const subtotal = {{ subtotal_cents }};
+  const deliveryFee = {{ delivery_fee_cents }};
+
+  function centsToRand(c){
+    return "R" + (c/100).toFixed(2);
+  }
+
+  function updateDelivery(){
+    const method = document.getElementById("methodSelect").value;
+    document.getElementById("delivery_method").value = method;
+
+    const addressWrap = document.getElementById("addressWrap");
+    const addressBox  = document.getElementById("addressBox");
+
+    let delivery = 0;
+    if(method === "delivery"){
+      delivery = deliveryFee;
+      addressWrap.style.display = "block";
+      addressBox.required = true;
+    } else {
+      addressWrap.style.display = "none";
+      addressBox.required = false;
+      addressBox.value = "";
+    }
+
+    document.getElementById("deliveryText").innerText = centsToRand(delivery);
+    document.getElementById("totalText").innerText = centsToRand(subtotal + delivery);
+  }
+
+  updateDelivery();
+</script>
 
 </body>
 </html>
