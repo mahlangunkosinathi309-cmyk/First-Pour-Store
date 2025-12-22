@@ -1,98 +1,80 @@
-<!doctype html>
-<html>
+﻿<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
   <title>Checkout - First Pour</title>
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-
-  <style>
-    :root{--gold:#c49a4a;--cream:#f6f0e4;--radius:18px}
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:"Inter",system-ui;background:radial-gradient(circle at top,#1b2440 0,#050712 52%) fixed,#050712;color:var(--cream);line-height:1.6}
-    h1,h2,h3{font-family:"Playfair Display",Georgia,serif;letter-spacing:.03em}
-    a{color:inherit}
-    .page{max-width:980px;margin:0 auto;padding:24px 16px 60px}
-    header{padding:16px 18px;border-radius:999px;background:rgba(8,13,28,.95);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
-    .brand{display:flex;align-items:center;gap:10px}
-    .brand-logo{width:46px;height:46px;border-radius:999px;background:#fff;overflow:hidden;border:1px solid rgba(255,255,255,.45)}
-    .brand-logo img{width:100%;height:100%;object-fit:contain}
-    .brand-text-main{font-size:.95rem;text-transform:uppercase;letter-spacing:.18em;font-weight:600}
-    .brand-text-sub{font-size:.7rem;color:#c6cadb}
-    .card{margin-top:22px;background:rgba(8,13,28,.96);border-radius:var(--radius);border:1px solid rgba(255,255,255,.09);padding:18px}
-    .muted{color:#c1c4d7;font-size:.88rem}
-    label{font-size:.8rem;color:#c1c4d7}
-    input,textarea{width:100%;margin-top:6px;border-radius:10px;border:1px solid rgba(255,255,255,.15);padding:10px 10px;font-size:.9rem;background:rgba(3,7,20,.95);color:#f7f7ff;outline:none}
-    input:focus,textarea:focus{border-color:var(--gold)}
-    .btn{margin-top:10px;border-radius:999px;border:0;background:linear-gradient(120deg,#fff9e5,#c49a4a,#f4e0aa);color:#10131f;font-size:.78rem;text-transform:uppercase;letter-spacing:.16em;padding:10px 18px;cursor:pointer;font-weight:700}
-    ul{padding-left:18px}
-    .price{color:var(--gold);font-weight:700;margin-top:8px}
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
-
 <body>
-  <div class="page">
-    <header>
-      <div class="brand">
-        <div class="brand-logo"><img src="/static/img/logo-first-pour.jpg" alt="First Pour logo" /></div>
-        <div>
-          <div class="brand-text-main">First Pour</div>
-          <div class="brand-text-sub">First pour of something greater</div>
-        </div>
-      </div>
-      <div class="muted"><a href="/">← Back to store</a></div>
-    </header>
 
-    {% if items|length == 0 %}
-      <div class="card">
-        <h2>Your cart is empty</h2>
-        <p class="muted">Go back and add products to cart.</p>
-      </div>
-    {% else %}
-      <div class="card">
-        <h2>Order Summary</h2>
-        <ul class="muted">
-          {% for it in items %}
-            <li>{{ it.qty }} × {{ it.name }} — R{{ (it.line/100) }}</li>
+<header class="top-bar">
+  <div class="brand">
+    <img class="logo" src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour logo">
+    <div>
+      <div class="brand-title">FIRST POUR</div>
+      <div class="brand-sub">Checkout</div>
+    </div>
+  </div>
+
+  <a class="header-cta" href="/" >
+    Back to store<br><strong>Home</strong>
+  </a>
+</header>
+
+<section class="checkout">
+  <div class="checkout-grid">
+
+    <div class="panel">
+      <h2>Order Summary</h2>
+
+      {% if lines|length == 0 %}
+        <p class="muted">Your cart is empty. Go back and add products.</p>
+      {% else %}
+        <ul class="summary">
+          {% for ln in lines %}
+            <li>
+              <span>{{ ln.qty }} x {{ ln.name }}</span>
+              <strong>R{{ "%.2f"|format(ln.line_cents / 100) }}</strong>
+            </li>
           {% endfor %}
         </ul>
-        <div class="price">Total: R{{ (total/100) }}</div>
-      </div>
 
-      <div class="card">
-        <h2>Delivery Details</h2>
-        <p class="muted">Submit to send your order to WhatsApp so we can confirm payment + delivery.</p>
+        <div class="total">
+          <span>Total</span>
+          <strong>R{{ "%.2f"|format(total_cents / 100) }}</strong>
+        </div>
 
-        <form method="POST" action="/checkout">
-          <input type="hidden" name="items_json" value='{{ cart_raw }}' />
+        <p class="muted small">Payment: EFT / Cash for now (Yoco can be added later).</p>
+      {% endif %}
+    </div>
 
-          <div style="margin-top:10px;">
-            <label>Name</label>
-            <input name="name" required />
-          </div>
+    <div class="panel">
+      <h2>Delivery Details</h2>
 
-          <div style="margin-top:10px;">
-            <label>Phone</label>
-            <input name="phone" required />
-          </div>
+      {% if lines|length == 0 %}
+        <p class="muted">Nothing to checkout.</p>
+      {% else %}
+      <form method="POST" action="/checkout">
+        <input type="hidden" name="cart_raw" value='{{ cart_raw }}'>
 
-          <div style="margin-top:10px;">
-            <label>Email</label>
-            <input name="email" type="email" required />
-          </div>
+        <label>Name</label>
+        <input name="name" required>
 
-          <div style="margin-top:10px;">
-            <label>Delivery Address</label>
-            <textarea name="address" required></textarea>
-          </div>
+        <label>Phone</label>
+        <input name="phone" required>
 
-          <button class="btn" type="submit">Place Order (WhatsApp/EFT)</button>
-        </form>
-      </div>
-    {% endif %}
+        <label>Address</label>
+        <textarea name="address" required></textarea>
+
+        <button class="btn btn-gold" type="submit">Place Order on WhatsApp</button>
+        <p class="muted small">We will confirm delivery and payment on WhatsApp.</p>
+      </form>
+      {% endif %}
+    </div>
+
   </div>
+</section>
+
 </body>
 </html>

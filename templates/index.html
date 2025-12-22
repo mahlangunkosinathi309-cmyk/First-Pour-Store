@@ -1,80 +1,133 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>First Pour</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta charset="UTF-8" />
+  <title>First Pour - Store</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
 <header class="top-bar">
-    <div class="brand">
-        <img src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour logo">
-        <div>
-            <h1>FIRST POUR</h1>
-            <p>First pour of something greater</p>
-        </div>
+  <div class="brand">
+    <img class="logo" src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour logo">
+    <div>
+      <div class="brand-title">FIRST POUR</div>
+      <div class="brand-sub">First pour of something greater</div>
     </div>
+  </div>
 
-    <a class="whatsapp" href="https://wa.me/{{ whatsapp_number }}" target="_blank">
-        Orders &amp; enquiries<br><strong>WhatsApp us</strong>
-    </a>
+  <a class="header-cta" href="https://wa.me/{{ whatsapp_number }}" target="_blank">
+    Orders & enquiries<br><strong>WhatsApp us</strong>
+  </a>
 </header>
 
 <section class="hero">
-    <span class="origin">CRAFTED IN COLESBERG - SOUTH AFRICA</span>
-
-    <h2>The First Pour of<br><span>something greater.</span></h2>
-
-    <p class="intro">
-        Classic, quietly confident spirits made for G&amp;Ts on hot afternoons,
-        long dinners and the moments where the first glass sets the tone.
+  <div class="hero-left">
+    <div class="kicker">CRAFTED IN COLESBERG - SOUTH AFRICA</div>
+    <h1 class="hero-title">The First Pour of <span>something greater.</span></h1>
+    <p class="hero-sub">
+      Premium spirits made for celebrations, dinners and smooth weekends.
+      Add to cart, checkout, and we confirm delivery and payment on WhatsApp.
+    </p>
+    <p class="hero-note">
+      Please enjoy responsibly. Not for sale to persons under the age of 18.
     </p>
 
-    <p class="responsible">
-        <strong>Please enjoy responsibly.</strong>
-        Not for sale to persons under the age of 18.
-    </p>
-
-    <div class="hero-image">
-        <img src="{{ url_for('static', filename='img/first-pour-gin.jpg') }}" alt="First Pour London Dry Gin label">
+    <div class="hero-actions">
+      <button class="btn btn-gold" onclick="scrollToShop()">Shop now</button>
+      <a class="btn btn-outline" href="https://wa.me/{{ whatsapp_number }}" target="_blank">Chat</a>
     </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-card">
+      <img src="{{ url_for('static', filename='img/first-pour-gin.jpg') }}" alt="First Pour Gin">
+    </div>
+  </div>
 </section>
 
-<section class="product-strip">
-    {% for product in products %}
-    <div class="product-chip">
-        <img src="{{ url_for('static', filename='img/' + product.image) }}" alt="{{ product.name }}">
-        <div>
-            <h4>{{ product.name }}</h4>
-            <p>{{ product.tagline }}</p>
+<section class="strip">
+  {% for p in products %}
+  <div class="chip">
+    <img src="{{ url_for('static', filename='img/' + p.image) }}" alt="{{ p.name }}">
+    <div>
+      <div class="chip-title">{{ p.name }}</div>
+      <div class="chip-sub">{{ p.tagline }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="shop" id="shop">
+  <div class="shop-head">
+    <h2>Shop</h2>
+    <p>Add bottles to cart, then checkout. Card payments (Yoco) can be added later.</p>
+  </div>
+
+  <div class="grid">
+    {% for p in products %}
+    <div class="card">
+      <img class="card-img" src="{{ url_for('static', filename='img/' + p.image) }}" alt="{{ p.name }}">
+      <div class="card-body">
+        <div class="card-title">{{ p.name }}</div>
+        <div class="card-sub">{{ p.tagline }}</div>
+        <div class="card-price">{{ p.price }}</div>
+
+        <div class="card-row">
+          <label>Qty
+            <input type="number" min="0" value="0" id="qty_{{ p.sku }}">
+          </label>
+          <button class="btn btn-outline" onclick="addToCart('{{ p.sku }}')">Add</button>
         </div>
+      </div>
     </div>
     {% endfor %}
-</section>
+  </div>
 
-<section class="shop">
-    <h3>Shop</h3>
-    <p>Add bottles to cart, then checkout. We confirm delivery and payment on WhatsApp (Yoco coming soon).</p>
-
-    <div class="product-grid">
-        {% for product in products %}
-        <div class="product-card">
-            <img src="{{ url_for('static', filename='img/' + product.image) }}" alt="{{ product.name }}">
-            <h4>{{ product.name }}</h4>
-            <p class="tagline">{{ product.tagline }}</p>
-            <span class="price">{{ product.price }}</span>
-
-            <a class="buy-btn"
-               href="https://wa.me/{{ whatsapp_number }}?text=I%20want%20to%20order%20{{ product.name }}"
-               target="_blank">
-                Order on WhatsApp
-            </a>
-        </div>
-        {% endfor %}
+  <div class="cartbar">
+    <div>
+      <div class="cart-title">Cart</div>
+      <div class="cart-sub"><span id="cartCount">0</span> item(s)</div>
     </div>
+    <button class="btn btn-gold" onclick="goCheckout()">Checkout</button>
+  </div>
 </section>
+
+<footer class="footer">
+  <div>First Pour. First pour of something greater.</div>
+  <div>Do not drink and drive.</div>
+</footer>
+
+<script>
+  const cart = [];
+
+  function scrollToShop(){
+    document.getElementById("shop").scrollIntoView({behavior:"smooth"});
+  }
+
+  function addToCart(sku){
+    const el = document.getElementById("qty_" + sku);
+    const qty = parseInt(el.value || "0", 10);
+    if(qty <= 0){ alert("Choose qty greater than 0"); return; }
+
+    const idx = cart.findIndex(x => x.sku === sku);
+    if(idx >= 0) cart[idx].qty = qty;
+    else cart.push({sku: sku, qty: qty});
+
+    const totalQty = cart.reduce((s,x)=>s+(x.qty||0),0);
+    document.getElementById("cartCount").innerText = totalQty;
+  }
+
+  function goCheckout(){
+    if(cart.length === 0){
+      alert("Your cart is empty.");
+      return;
+    }
+    const encoded = encodeURIComponent(JSON.stringify(cart));
+    window.location.href = "/checkout?cart=" + encoded;
+  }
+</script>
 
 </body>
 </html>
