@@ -175,7 +175,7 @@ def yoco_start():
     order_id = "FP-" + uuid.uuid4().hex[:10].upper()
     session["order_id"] = order_id
 
-    # ✅ FIX: Yoco expects displayName (not name) for each lineItem
+    # ✅ FIX: Yoco requires pricingDetails per line item
     payload = {
         "amount": amount,
         "currency": "ZAR",
@@ -189,9 +189,12 @@ def yoco_start():
         },
         "lineItems": [
             {
-                "displayName": l["name"],   # ✅ REQUIRED by Yoco
+                "displayName": l["name"],
                 "quantity": l["qty"],
-                "unitPrice": l["unit_cents"],
+                "pricingDetails": {
+                    "price": l["unit_cents"],   # cents
+                    "currency": "ZAR"
+                }
             }
             for l in lines
         ],
