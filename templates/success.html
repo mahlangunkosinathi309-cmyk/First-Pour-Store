@@ -1,0 +1,19 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payment Successful | First Pour</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="container" style="max-width: 820px;">
+    <h1>Payment successful ✅</h1>
+    <p>Thanks — we received your payment.</p>
+    {% if order_id %}
+      <p><strong>Order ID:</strong> {{ order_id }}</p>
+    {% endif %}
+    <a class="btn" href="/">Back to store</a>
+  </div>
+</body>
+</html>

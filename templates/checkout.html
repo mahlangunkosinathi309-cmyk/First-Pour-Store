@@ -2,124 +2,113 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Checkout - First Pour</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Checkout | First Pour</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-
-<header class="top-bar">
-  <div class="brand">
-    <img class="logo" src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour logo">
-    <div>
-      <div class="brand-title">FIRST POUR</div>
-      <div class="brand-sub">Checkout</div>
+  <div class="container" style="max-width: 980px;">
+    <div class="topbar">
+      <a href="/" class="brand">
+        <img src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour" class="logo"/>
+        <div>
+          <div class="brand-title">FIRST POUR</div>
+          <div class="brand-sub">First pour of something greater</div>
+        </div>
+      </a>
+      <div class="topbar-right">
+        <div>Orders & enquiries</div>
+        <a class="whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
+      </div>
     </div>
-  </div>
 
-  <a class="header-cta" href="/" >
-    Back to store
-  </a>
-</header>
+    <h1 style="margin-top:18px;">Checkout</h1>
 
-<section class="checkout">
-  <div class="checkout-grid">
-    <div class="panel">
-      <h2>Your order</h2>
-      {% if lines|length == 0 %}
-        <p class="muted">Your cart is empty. Go back and add products.</p>
-      {% else %}
-        <ul class="summary">
-          {% for L in lines %}
-            <li>
-              <div><strong>{{ L.name }}</strong><br><span class="muted small">x{{ L.qty }} · {{ L.unit_price }}</span></div>
-              <div><strong>{{ L.line_total }}</strong></div>
-            </li>
+    {% if not lines %}
+      <p>Your cart is empty. Go back and add products.</p>
+      <a class="btn" href="/">Back to shop</a>
+    {% else %}
+      <div class="card" style="margin-top:14px;">
+        <h2>Your items</h2>
+
+        <div class="order-lines">
+          {% for l in lines %}
+            <div class="line">
+              <div class="line-name">
+                <strong>{{ l.name }}</strong>
+                <div class="muted">{{ l.unit_display }} x {{ l.qty }}</div>
+              </div>
+              <div class="line-price">{{ ("R" ~ (l.line_cents/100))|replace(".0","") }}</div>
+            </div>
           {% endfor %}
-        </ul>
-
-        <div class="total-row">
-          <div>Subtotal</div>
-          <div><strong>R{{ (subtotal_cents/100)|round(0)|int }}</strong></div>
         </div>
 
-        <div class="total-row" id="feeRow">
-          <div id="feeLabel">Pickup</div>
-          <div id="feeValue"><strong>Free</strong></div>
+        <hr/>
+
+        <form method="POST" class="form">
+          <div class="grid">
+            <div>
+              <label>Delivery</label>
+              <select name="delivery_method">
+                <option value="pickup" {% if delivery_method=="pickup" %}selected{% endif %}>Pickup (Free)</option>
+                <option value="delivery" {% if delivery_method=="delivery" %}selected{% endif %}>Delivery (R80)</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Your name</label>
+              <input name="customer_name" placeholder="e.g. Nkosi" value="{{ session.get('customer_name','') }}">
+            </div>
+
+            <div>
+              <label>Phone</label>
+              <input name="customer_phone" placeholder="e.g. 07..." value="{{ session.get('customer_phone','') }}">
+            </div>
+
+            <div>
+              <label>Address (if delivery)</label>
+              <input name="customer_address" placeholder="Street, suburb, city" value="{{ session.get('customer_address','') }}">
+            </div>
+          </div>
+
+          <button class="btn" type="submit">Update details</button>
+        </form>
+
+        <div class="totals">
+          <div class="row"><span>Subtotal</span><span>{{ subtotal_display }}</span></div>
+          <div class="row"><span>Delivery</span><span>{{ delivery_fee_display }}</span></div>
+          <div class="row total"><span>Total</span><span>{{ total_display }}</span></div>
         </div>
 
-        <div class="total">
-          <div><strong>Total</strong></div>
-          <div><strong id="totalValue">R{{ (subtotal_cents/100)|round(0)|int }}</strong></div>
-        </div>
-      {% endif %}
-      <p class="muted small" style="margin-top:12px;">
-        We confirm delivery & payment on WhatsApp. (Yoco coming soon)
-      </p>
-    </div>
+        <div class="actions" style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+          <form action="/cart/clear" method="POST">
+            <button class="btn btn-ghost" type="submit">Clear cart</button>
+          </form>
 
-    <div class="panel">
-      <h2>Customer details</h2>
+          <!-- WhatsApp fallback (always available) -->
+          <a class="btn btn-ghost" target="_blank"
+             href="https://wa.me/{{ whatsapp_number }}?text={{ ('Hi First Pour. I want to order:%0A' ~ total_display ~ '%0ADelivery: ' ~ delivery_method)|urlencode }}">
+            Order via WhatsApp
+          </a>
 
-      <form method="POST" action="/place-order">
-        <input type="hidden" name="cart_raw" value="{{ cart_raw }}"/>
-
-        <label class="muted small">Full name</label>
-        <input name="name" placeholder="e.g. Emmanuel" />
-
-        <label class="muted small" style="margin-top:10px;">Phone number</label>
-        <input name="phone" placeholder="e.g. 07X XXX XXXX" />
-
-        <label class="muted small" style="margin-top:10px;">Delivery method</label>
-        <select name="method" id="method" onchange="updateFee()">
-          <option value="pickup">Pickup (Free)</option>
-          <option value="delivery">Delivery (R80)</option>
-        </select>
-
-        <div id="addressBox" style="margin-top:10px; display:none;">
-          <label class="muted small">Delivery address</label>
-          <textarea name="address" placeholder="Street, suburb, city"></textarea>
+          <!-- YOCO -->
+          {% if yoco_enabled %}
+            <form action="/pay/yoco/start" method="POST">
+              <button class="btn" type="submit">Pay with Yoco</button>
+            </form>
+          {% else %}
+            <div class="muted" style="align-self:center;">
+              Yoco not connected yet (set YOCO_SECRET_KEY on Render).
+            </div>
+          {% endif %}
         </div>
 
-        <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
-          <button type="submit" class="btn btn-gold">Send order on WhatsApp</button>
-          <a class="btn btn-outline" href="/">Back</a>
-        </div>
-      </form>
+        <p class="muted" style="margin-top:10px;">
+          Please enjoy responsibly. Not for sale to persons under 18.
+        </p>
 
-      <p class="muted small" style="margin-top:14px;">
-        Not for sale to persons under the age of 18. Please drink responsibly.
-      </p>
-    </div>
+      </div>
+    {% endif %}
   </div>
-</section>
-
-<script>
-  const subtotal = {{ (subtotal_cents/100)|round(0)|int }};
-  const deliveryFee = {{ (delivery_fee_cents/100)|round(0)|int }};
-
-  function updateFee(){
-    const method = document.getElementById("method").value;
-    const feeLabel = document.getElementById("feeLabel");
-    const feeValue = document.getElementById("feeValue");
-    const totalValue = document.getElementById("totalValue");
-    const addressBox = document.getElementById("addressBox");
-
-    if(method === "delivery"){
-      feeLabel.innerText = "Delivery";
-      feeValue.innerHTML = "<strong>R" + deliveryFee + "</strong>";
-      totalValue.innerText = "R" + (subtotal + deliveryFee);
-      addressBox.style.display = "block";
-    } else {
-      feeLabel.innerText = "Pickup";
-      feeValue.innerHTML = "<strong>Free</strong>";
-      totalValue.innerText = "R" + subtotal;
-      addressBox.style.display = "none";
-    }
-  }
-
-  updateFee();
-</script>
-
 </body>
 </html>
