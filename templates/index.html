@@ -42,7 +42,8 @@
 
   <div class="hero-right">
     <div class="hero-card">
-      <img src="{{ url_for('static', filename='img/first-pour-gin.jpg') }}" alt="First Pour Gin">
+      <img src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}">
+
     </div>
   </div>
 </section>
