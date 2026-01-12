@@ -17,7 +17,7 @@
         </div>
       </a>
       <div class="topbar-right">
-        <div class="muted">Orders & enquiries</div>
+        <div>Orders & enquiries</div>
         <a class="whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
       </div>
     </div>
@@ -25,8 +25,9 @@
     <h1 style="margin-top:18px;">Checkout</h1>
 
     {% if yoco_error %}
-      <div class="alert">
-        <strong>Yoco issue:</strong> {{ yoco_error }}
+      <div class="shop" style="border-color: rgba(216,60,60,.6);">
+        <strong style="color:#ffb3b3;">Yoco issue:</strong>
+        <div class="muted" style="color:#ffd0d0; margin-top:6px;">{{ yoco_error }}</div>
       </div>
     {% endif %}
 
@@ -34,65 +35,59 @@
       <p>Your cart is empty. Go back and add products.</p>
       <a class="btn" href="/">Back to shop</a>
     {% else %}
-      <div class="card" style="margin-top:14px;">
+      <div class="shop" style="margin-top:14px;">
         <h2>Your items</h2>
 
-        <div class="order-lines">
+        <div style="margin-top:12px;">
           {% for l in lines %}
-            <div class="line">
-              <div class="line-name">
+            <div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.10);padding:10px 0;">
+              <div>
                 <strong>{{ l.name }}</strong>
-                <div class="muted">{{ l.unit_display }} × {{ l.qty }}</div>
+                <div class="muted">{{ l.unit_display }} x {{ l.qty }}</div>
               </div>
-              <div class="line-price">{{ ("R" ~ (l.line_cents/100))|replace(".0","") }}</div>
+              <div style="font-weight:800;color:var(--gold);">R{{ (l.line_cents/100)|round(2) }}</div>
             </div>
           {% endfor %}
         </div>
 
-        <hr/>
-
-        <form method="POST" class="form">
-          <div class="grid">
+        <form method="POST" style="margin-top:14px;">
+          <div class="grid" style="grid-template-columns:1fr 1fr 1fr; gap:12px;">
             <div>
-              <label>Delivery</label>
+              <label class="muted">Delivery</label>
               <select name="delivery_method">
                 <option value="pickup" {% if delivery_method=="pickup" %}selected{% endif %}>Pickup (Free)</option>
                 <option value="delivery" {% if delivery_method=="delivery" %}selected{% endif %}>Delivery (R80)</option>
               </select>
             </div>
-
             <div>
-              <label>Your name</label>
+              <label class="muted">Your name</label>
               <input name="customer_name" placeholder="e.g. Nkosi" value="{{ session.get('customer_name','') }}">
             </div>
-
             <div>
-              <label>Phone</label>
+              <label class="muted">Phone</label>
               <input name="customer_phone" placeholder="e.g. 07..." value="{{ session.get('customer_phone','') }}">
             </div>
-
-            <div>
-              <label>Address (if delivery)</label>
+            <div style="grid-column:1 / -1;">
+              <label class="muted">Address (if delivery)</label>
               <input name="customer_address" placeholder="Street, suburb, city" value="{{ session.get('customer_address','') }}">
             </div>
           </div>
 
-          <button class="btn" type="submit">Update details</button>
+          <button class="btn" type="submit" style="margin-top:10px;">Update details</button>
         </form>
 
-        <div class="totals">
-          <div class="row"><span>Subtotal</span><span>{{ subtotal_display }}</span></div>
-          <div class="row"><span>Delivery</span><span>{{ delivery_fee_display }}</span></div>
-          <div class="row total"><span>Total</span><span>{{ total_display }}</span></div>
+        <div style="margin-top:14px;">
+          <div style="display:flex;justify-content:space-between;"><span class="muted">Subtotal</span><span>{{ subtotal_display }}</span></div>
+          <div style="display:flex;justify-content:space-between;"><span class="muted">Delivery</span><span>{{ delivery_fee_display }}</span></div>
+          <div style="display:flex;justify-content:space-between;font-weight:900;margin-top:8px;"><span>Total</span><span style="color:var(--gold);">{{ total_display }}</span></div>
         </div>
 
-        <div class="actions">
+        <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
           <form action="/cart/clear" method="POST">
             <button class="btn btn-ghost" type="submit">Clear cart</button>
           </form>
 
-          <a class="btn btn-ghost" target="_blank"
-             href="https://wa.me/{{ whatsapp_number }}">
+          <a class="btn btn-ghost" target="_blank" href="https://wa.me/{{ whatsapp_number }}">
             Order via WhatsApp
           </a>
 
@@ -101,9 +96,7 @@
               <button class="btn" type="submit">Pay with Yoco</button>
             </form>
           {% else %}
-            <div class="muted" style="align-self:center;">
-              Yoco not connected yet (set YOCO_SECRET_KEY on Render).
-            </div>
+            <div class="muted" style="align-self:center;">Yoco not connected yet (set YOCO_SECRET_KEY on Render).</div>
           {% endif %}
         </div>
 

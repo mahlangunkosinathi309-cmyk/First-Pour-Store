@@ -10,7 +10,7 @@ WHATSAPP_NUMBER = os.getenv("WHATSAPP_NUMBER", "27600000000")
 ADMIN_KEY = os.getenv("ADMIN_KEY", "1234")
 
 YOCO_SECRET_KEY = os.getenv("YOCO_SECRET_KEY", "")
-PUBLIC_URL = os.getenv("PUBLIC_URL", "http://127.0.0.1:5000").rstrip("/")
+PUBLIC_URL = (os.getenv("PUBLIC_URL", "http://127.0.0.1:5000") or "").rstrip("/")
 
 YOCO_CHECKOUT_URL = "https://payments.yoco.com/api/checkouts"
 
@@ -18,7 +18,7 @@ PRODUCTS = [
     {
         "id": "gin",
         "name": "First Pour – London Dry Gin",
-        "price": 35000,
+        "price": 35000,  # cents
         "price_display": "R350",
         "desc": "Crisp · Aromatic · Classic",
         "img": "first-pour-gin.jpg",
@@ -49,21 +49,6 @@ def product_by_id(pid: str):
     return None
 
 
-def cart_total_cents(cart: dict) -> int:
-    total = 0
-    for pid, qty in cart.items():
-        p = product_by_id(pid)
-        if not p:
-            continue
-        try:
-            q = int(qty)
-        except:
-            q = 0
-        if q > 0:
-            total += p["price"] * q
-    return total
-
-
 def cart_lines(cart: dict):
     lines = []
     for pid, qty in cart.items():
@@ -86,6 +71,18 @@ def cart_lines(cart: dict):
     return lines
 
 
+def cart_total_cents(cart: dict) -> int:
+    total = 0
+    for pid, qty in cart.items():
+        p = product_by_id(pid)
+        if not p:
+            continue
+        q = int(qty)
+        if q > 0:
+            total += p["price"] * q
+    return total
+
+
 def cents_to_zar(cents: int) -> str:
     return f"R{cents/100:.2f}".replace(".00", "")
 
@@ -97,20 +94,15 @@ def index():
 
 @app.route("/cart/add", methods=["POST"])
 def cart_add():
-    pid = request.form.get("product_id", "").strip()
-    qty = request.form.get("qty", "1").strip()
-    p = product_by_id(pid)
-    if not p:
+    pid = (request.form.get("product_id") or "").strip()
+    qty = int(request.form.get("qty") or "1")
+    qty = max(1, min(99, qty))
+
+    if not product_by_id(pid):
         return redirect(url_for("index"))
 
-    try:
-        qty_i = int(qty)
-    except:
-        qty_i = 1
-    qty_i = max(1, min(99, qty_i))
-
     cart = session.get("cart", {})
-    cart[pid] = int(cart.get(pid, 0)) + qty_i
+    cart[pid] = int(cart.get(pid, 0)) + qty
     session["cart"] = cart
     return redirect(url_for("checkout"))
 
@@ -129,34 +121,34 @@ def checkout():
 
     delivery_method = session.get("delivery_method", "pickup")
     delivery_fee = 0 if delivery_method == "pickup" else 8000
-    grand_total = subtotal + delivery_fee
+    total = subtotal + delivery_fee
 
     if request.method == "POST":
         delivery_method = request.form.get("delivery_method", "pickup")
         if delivery_method not in ["pickup", "delivery"]:
             delivery_method = "pickup"
-        session["delivery_method"] = delivery_method
 
-        session["customer_name"] = request.form.get("customer_name", "").strip()
-        session["customer_phone"] = request.form.get("customer_phone", "").strip()
-        session["customer_address"] = request.form.get("customer_address", "").strip()
+        session["delivery_method"] = delivery_method
+        session["customer_name"] = (request.form.get("customer_name") or "").strip()
+        session["customer_phone"] = (request.form.get("customer_phone") or "").strip()
+        session["customer_address"] = (request.form.get("customer_address") or "").strip()
 
         return redirect(url_for("checkout"))
 
+    # show latest yoco error once
     yoco_error = session.pop("yoco_error", "")
 
     return render_template(
         "checkout.html",
-        products=PRODUCTS,
         whatsapp_number=WHATSAPP_NUMBER,
         lines=lines,
         subtotal_display=cents_to_zar(subtotal),
         delivery_method=delivery_method,
         delivery_fee_display=cents_to_zar(delivery_fee),
-        total_display=cents_to_zar(grand_total),
-        total_cents=grand_total,
-        public_url=PUBLIC_URL,
+        total_display=cents_to_zar(total),
+        total_cents=total,
         yoco_enabled=bool(YOCO_SECRET_KEY),
+        public_url=PUBLIC_URL,
         yoco_error=yoco_error,
     )
 
@@ -164,7 +156,11 @@ def checkout():
 @app.route("/pay/yoco/start", methods=["POST"])
 def yoco_start():
     if not YOCO_SECRET_KEY:
-        session["yoco_error"] = "YOCO_SECRET_KEY not set on Render."
+        session["yoco_error"] = "YOCO_SECRET_KEY is not set on Render."
+        return redirect(url_for("checkout"))
+
+    if not PUBLIC_URL.startswith("https://"):
+        session["yoco_error"] = f"PUBLIC_URL must be https://... (currently: {PUBLIC_URL})"
         return redirect(url_for("checkout"))
 
     cart = session.get("cart", {})
@@ -192,7 +188,10 @@ def yoco_start():
             "order_id": order_id,
             "delivery_method": delivery_method,
         },
-        "lineItems": [{"name": l["name"], "quantity": l["qty"], "unitPrice": l["unit_cents"]} for l in lines],
+        "lineItems": [
+            {"name": l["name"], "quantity": l["qty"], "unitPrice": l["unit_cents"]}
+            for l in lines
+        ],
     }
 
     headers = {
@@ -207,18 +206,14 @@ def yoco_start():
         session["yoco_error"] = f"Request to Yoco failed: {e}"
         return redirect(url_for("checkout"))
 
-    print("YOCO STATUS:", r.status_code)
-    print("YOCO BODY:", r.text)
-
     if r.status_code != 200:
-        session["yoco_error"] = f"Yoco rejected request ({r.status_code}). Check secret key + PUBLIC_URL."
+        session["yoco_error"] = f"Yoco rejected request ({r.status_code}). Response: {r.text}"
         return redirect(url_for("checkout"))
 
     data = r.json()
-    redirect_url = data.get("redirectUrl") or ""
-
+    redirect_url = data.get("redirectUrl", "")
     if not redirect_url:
-        session["yoco_error"] = "Yoco returned no redirectUrl. Check your key or account permissions."
+        session["yoco_error"] = f"Yoco response missing redirectUrl: {data}"
         return redirect(url_for("checkout"))
 
     return redirect(redirect_url)
@@ -244,7 +239,13 @@ def admin():
     key = request.args.get("key", "")
     if key != ADMIN_KEY:
         abort(403)
-    return {"ok": True, "yoco_enabled": bool(YOCO_SECRET_KEY), "public_url": PUBLIC_URL, "products": PRODUCTS}
+    return {
+        "ok": True,
+        "public_url": PUBLIC_URL,
+        "yoco_enabled": bool(YOCO_SECRET_KEY),
+        "whatsapp_number": WHATSAPP_NUMBER,
+        "products": PRODUCTS,
+    }
 
 
 if __name__ == "__main__":

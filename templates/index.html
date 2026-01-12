@@ -3,14 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>First Pour | Store</title>
+  <title>First Pour</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-
   <div class="container">
-
-    <!-- Top Bar -->
     <div class="topbar">
       <a href="/" class="brand">
         <img src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour" class="logo"/>
@@ -19,54 +16,83 @@
           <div class="brand-sub">First pour of something greater</div>
         </div>
       </a>
-
       <div class="topbar-right">
-        <div class="muted">Orders & enquiries</div>
+        <div>Orders & enquiries</div>
         <a class="whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
-        <a class="btn btn-ghost" href="/checkout">Checkout</a>
       </div>
     </div>
 
-    <!-- Hero -->
-    <div class="hero">
-      <h1>Luxury spirits & wine</h1>
-      <p class="muted">Scroll, add to cart, and pay securely (Yoco) or order via WhatsApp.</p>
-    </div>
+    <section class="hero">
+      <div class="hero-left">
+        <div class="kicker">CRAFTED IN COLESBERG • SOUTH AFRICA</div>
+        <h1>The First Pour of <span>something</span> greater.</h1>
+        <p class="lead">
+          Premium spirits made for celebrations, dinners and smooth weekends.
+          Add to cart, checkout, and we confirm delivery and payment on WhatsApp.
+        </p>
+        <p class="muted">Please enjoy responsibly. Not for sale to persons under the age of 18.</p>
 
-    <!-- Products Grid -->
-    <div class="grid-products">
-
-      {% for p in products %}
-      <div class="product-card">
-        <div class="product-image-wrap">
-          <img src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}" class="product-image">
+        <div class="hero-actions">
+          <a class="btn" href="#shop">Shop now</a>
+          <a class="btn btn-ghost" target="_blank" href="https://wa.me/{{ whatsapp_number }}">Chat</a>
         </div>
 
-        <div class="product-body">
-          <h3 class="product-title">{{ p.name }}</h3>
-          <p class="muted">{{ p.desc }}</p>
+        <div class="mini-cards">
+          {% for p in products %}
+          <div class="mini-card">
+            <img src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}">
+            <div>
+              <div class="mini-title">{{ p.name.split('–')[-1].strip() }}</div>
+              <div class="mini-sub">{{ p.desc }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
 
-          <div class="product-bottom">
+      <div class="hero-right">
+        <div class="hero-card">
+          <img class="hero-label" src="{{ url_for('static', filename='img/first-pour-gin.jpg') }}" alt="First Pour Gin">
+        </div>
+      </div>
+    </section>
+
+    <section id="shop" class="shop">
+      <div class="shop-head">
+        <h2>Shop</h2>
+        <p class="muted">Add bottles to cart, then checkout. Pickup (free) or Delivery (R80).</p>
+      </div>
+
+      <div class="grid">
+        {% for p in products %}
+        <div class="product">
+          <img src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}">
+          <div class="product-body">
+            <h3>{{ p.name.split('–')[-1].strip() }}</h3>
+            <div class="muted">{{ p.desc }}</div>
             <div class="price">{{ p.price_display }}</div>
 
-            <form method="POST" action="/cart/add" class="add-form">
+            <form action="/cart/add" method="POST" class="add-form">
               <input type="hidden" name="product_id" value="{{ p.id }}">
-              <input type="number" name="qty" value="1" min="1" max="99" class="qty">
-              <button type="submit" class="btn">Add</button>
+              <select name="qty">
+                <option value="1">Qty 1</option>
+                <option value="2">Qty 2</option>
+                <option value="3">Qty 3</option>
+                <option value="6">Qty 6</option>
+              </select>
+              <button class="btn" type="submit">Add to cart</button>
             </form>
+
+            <a class="btn btn-ghost" href="/checkout">Go to checkout</a>
           </div>
         </div>
+        {% endfor %}
       </div>
-      {% endfor %}
+    </section>
 
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <p class="muted">Please enjoy responsibly. Not for sale to persons under 18.</p>
-    </div>
-
+    <footer class="footer">
+      <div class="muted">© First Pour • Please enjoy responsibly • 18+</div>
+    </footer>
   </div>
-
 </body>
 </html>
