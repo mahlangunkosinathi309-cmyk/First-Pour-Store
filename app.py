@@ -132,10 +132,8 @@ def checkout():
         session["customer_name"] = (request.form.get("customer_name") or "").strip()
         session["customer_phone"] = (request.form.get("customer_phone") or "").strip()
         session["customer_address"] = (request.form.get("customer_address") or "").strip()
-
         return redirect(url_for("checkout"))
 
-    # show latest yoco error once
     yoco_error = session.pop("yoco_error", "")
 
     return render_template(
@@ -177,6 +175,7 @@ def yoco_start():
     order_id = "FP-" + uuid.uuid4().hex[:10].upper()
     session["order_id"] = order_id
 
+    # ✅ FIX: Yoco expects displayName (not name) for each lineItem
     payload = {
         "amount": amount,
         "currency": "ZAR",
@@ -189,7 +188,11 @@ def yoco_start():
             "delivery_method": delivery_method,
         },
         "lineItems": [
-            {"name": l["name"], "quantity": l["qty"], "unitPrice": l["unit_cents"]}
+            {
+                "displayName": l["name"],   # ✅ REQUIRED by Yoco
+                "quantity": l["qty"],
+                "unitPrice": l["unit_cents"],
+            }
             for l in lines
         ],
     }
