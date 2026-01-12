@@ -2,196 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>First Pour - Store</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>First Pour | Store</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
-<header class="top-bar">
-  <div class="brand">
-    <img class="logo" src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour logo">
-    <div>
-      <div class="brand-title">FIRST POUR</div>
-      <div class="brand-sub">First pour of something greater</div>
-    </div>
-  </div>
+  <div class="container">
 
-  <a class="header-cta" href="https://wa.me/{{ whatsapp_number }}" target="_blank">
-    Orders &amp; enquiries<br><strong>WhatsApp us</strong>
-  </a>
-</header>
-
-<section class="hero">
-  <div class="hero-left">
-    <div class="kicker">CRAFTED IN COLESBERG - SOUTH AFRICA</div>
-    <h1 class="hero-title">The First Pour of <span>something greater.</span></h1>
-    <p class="hero-sub">
-      Premium spirits made for celebrations, dinners and smooth weekends.
-      Add to cart, checkout, and we confirm delivery and payment on WhatsApp.
-    </p>
-    <p class="hero-note">
-      Please enjoy responsibly. Not for sale to persons under the age of 18.
-    </p>
-
-    <div class="hero-actions">
-      <button class="btn btn-gold" onclick="scrollToShop()">Shop now</button>
-      <a class="btn btn-outline" href="https://wa.me/{{ whatsapp_number }}" target="_blank">Chat</a>
-    </div>
-  </div>
-
-  <div class="hero-right">
-    <div class="hero-card">
-      <img src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}">
-
-    </div>
-  </div>
-</section>
-
-<section class="strip">
-  {% for p in products %}
-  <div class="chip">
-    <img src="{{ url_for('static', filename='img/' + p.image) }}" alt="{{ p.name }}">
-    <div>
-      <div class="chip-title">{{ p.name }}</div>
-      <div class="chip-sub">{{ p.tagline }}</div>
-    </div>
-  </div>
-  {% endfor %}
-</section>
-
-<section class="shop" id="shop">
-  <div class="shop-head">
-    <h2>Shop</h2>
-    <p>Add bottles to cart, then checkout. Pickup (free) or Delivery (R80).</p>
-  </div>
-
-  <div class="grid">
-    {% for p in products %}
-    <div class="card" data-sku="{{ p.sku }}">
-      <img class="card-img" src="{{ url_for('static', filename='img/' + p.image) }}" alt="{{ p.name }}">
-      <div class="card-body">
-        <div class="card-title">{{ p.name }}</div>
-        <div class="card-sub">{{ p.tagline }}</div>
-        <div class="card-price">{{ p.price }}</div>
-
-        <div class="qty-row">
-          <button class="qty-btn" onclick="changeQty('{{ p.sku }}', -1)">-</button>
-          <div class="qty-box" id="qty_{{ p.sku }}">0</div>
-          <button class="qty-btn" onclick="changeQty('{{ p.sku }}', 1)">+</button>
-
-          <button class="btn btn-outline" onclick="addToCart('{{ p.sku }}')">Add</button>
+    <!-- Top Bar -->
+    <div class="topbar">
+      <a href="/" class="brand">
+        <img src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour" class="logo"/>
+        <div>
+          <div class="brand-title">FIRST POUR</div>
+          <div class="brand-sub">First pour of something greater</div>
         </div>
+      </a>
+
+      <div class="topbar-right">
+        <div class="muted">Orders & enquiries</div>
+        <a class="whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
+        <a class="btn btn-ghost" href="/checkout">Checkout</a>
       </div>
     </div>
-    {% endfor %}
-  </div>
 
-  <div class="cartbar">
-    <div>
-      <div class="cart-title">Cart</div>
-      <div class="cart-sub"><span id="cartCount">0</span> item(s)</div>
+    <!-- Hero -->
+    <div class="hero">
+      <h1>Luxury spirits & wine</h1>
+      <p class="muted">Scroll, add to cart, and pay securely (Yoco) or order via WhatsApp.</p>
     </div>
-    <div class="cart-actions">
-      <button class="btn btn-outline" onclick="clearCart()">Clear</button>
-      <button class="btn btn-gold" onclick="goCheckout()">Checkout</button>
+
+    <!-- Products Grid -->
+    <div class="grid-products">
+
+      {% for p in products %}
+      <div class="product-card">
+        <div class="product-image-wrap">
+          <img src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}" class="product-image">
+        </div>
+
+        <div class="product-body">
+          <h3 class="product-title">{{ p.name }}</h3>
+          <p class="muted">{{ p.desc }}</p>
+
+          <div class="product-bottom">
+            <div class="price">{{ p.price_display }}</div>
+
+            <form method="POST" action="/cart/add" class="add-form">
+              <input type="hidden" name="product_id" value="{{ p.id }}">
+              <input type="number" name="qty" value="1" min="1" max="99" class="qty">
+              <button type="submit" class="btn">Add</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
     </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p class="muted">Please enjoy responsibly. Not for sale to persons under 18.</p>
+    </div>
+
   </div>
-</section>
-
-<footer class="footer">
-  <div>First Pour. First pour of something greater.</div>
-  <div>Do not drink and drive.</div>
-</footer>
-
-<script>
-  // ---------- Cart persistence ----------
-  const STORAGE_KEY = "firstpour_cart_v1";
-
-  function loadCart(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return [];
-      const arr = JSON.parse(raw);
-      if(!Array.isArray(arr)) return [];
-      return arr.filter(x => x && x.sku && Number.isInteger(x.qty) && x.qty > 0);
-    }catch(e){
-      return [];
-    }
-  }
-
-  function saveCart(cart){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
-  }
-
-  let cart = loadCart();
-
-  function scrollToShop(){
-    document.getElementById("shop").scrollIntoView({behavior:"smooth"});
-  }
-
-  function getQty(sku){
-    const el = document.getElementById("qty_" + sku);
-    return parseInt(el.innerText || "0", 10);
-  }
-
-  function setQty(sku, qty){
-    const el = document.getElementById("qty_" + sku);
-    el.innerText = String(Math.max(0, qty));
-  }
-
-  function changeQty(sku, delta){
-    const current = getQty(sku);
-    setQty(sku, current + delta);
-  }
-
-  function addToCart(sku){
-    const qty = getQty(sku);
-    if(qty <= 0){
-      alert("Qty must be 1 or more.");
-      return;
-    }
-
-    const idx = cart.findIndex(x => x.sku === sku);
-    if(idx >= 0) cart[idx].qty = qty;
-    else cart.push({sku: sku, qty: qty});
-
-    saveCart(cart);
-    refreshCartUI();
-  }
-
-  function clearCart(){
-    cart = [];
-    saveCart(cart);
-    // reset all qty boxes to 0
-    document.querySelectorAll(".qty-box").forEach(el => el.innerText = "0");
-    refreshCartUI();
-  }
-
-  function refreshCartUI(){
-    const totalQty = cart.reduce((s,x)=>s+(x.qty||0),0);
-    document.getElementById("cartCount").innerText = totalQty;
-  }
-
-  function syncQtyBoxesFromCart(){
-    // set qty boxes based on saved cart
-    cart.forEach(item => setQty(item.sku, item.qty));
-    refreshCartUI();
-  }
-
-  function goCheckout(){
-    if(cart.length === 0){
-      alert("Your cart is empty.");
-      return;
-    }
-    const encoded = encodeURIComponent(JSON.stringify(cart));
-    window.location.href = "/checkout?cart=" + encoded;
-  }
-
-  // On page load: restore quantities + cart count
-  syncQtyBoxesFromCart();
-</script>
 
 </body>
 </html>
-
