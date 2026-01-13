@@ -1,13 +1,13 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Checkout | First Pour</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-  <div class="container">
+  <div class="container" style="max-width: 980px;">
     <div class="topbar">
       <a href="/" class="brand">
         <img src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour" class="logo"/>
@@ -16,110 +16,107 @@
           <div class="brand-sub">First pour of something greater</div>
         </div>
       </a>
-
       <div class="topbar-right">
-        <a class="navlink" href="/cart">
-          Cart <span class="badge">{{ cart_count }}</span>
+        <a class="btn btn-ghost" href="/">Back to shop</a>
+        <a class="btn btn-ghost" href="/checkout">
+          Cart
+          {% if cart_qty and cart_qty > 0 %}
+            <span class="badge">{{ cart_qty }}</span>
+          {% endif %}
         </a>
-        <a class="navlink whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp</a>
+        <a class="btn" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
       </div>
     </div>
 
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+          {% for m in messages %}
+            <div class="flash-item">{{ m }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
     <h1 style="margin-top:18px;">Checkout</h1>
 
-    {% if session.get("yoco_error") %}
-      <div class="toast error" style="display:block; margin-top:10px;">
-        {{ session.get("yoco_error") }}
-      </div>
-      {% set _ = session.pop("yoco_error") %}
-    {% endif %}
-
     {% if not lines %}
-      <div class="card">
-        <p>Your cart is empty.</p>
-        <a class="btn" href="/#shop">Shop now</a>
-      </div>
+      <p>Your cart is empty.</p>
+      <a class="btn" href="/">Back to shop</a>
     {% else %}
-      <div class="checkout-grid">
-        <div class="card">
-          <h2>Your items</h2>
+      <div class="card" style="margin-top:14px;">
+        <h2>Your items</h2>
 
-          <div class="order-lines">
-            {% for l in lines %}
-              <div class="line">
-                <div class="line-name">
-                  <strong>{{ l.name }}</strong>
-                  <div class="muted">{{ l.unit_display }} × {{ l.qty }}</div>
-                </div>
-                <div class="line-price">{{ ("R" ~ (l.line_cents/100))|replace(".0","") }}</div>
+        <div class="order-lines">
+          {% for l in lines %}
+            <div class="line">
+              <div class="line-name">
+                <strong>{{ l.name }}</strong>
+                <div class="muted">{{ l.unit_display }} × {{ l.qty }}</div>
               </div>
-            {% endfor %}
-          </div>
-
-          <div class="totals">
-            <div class="row"><span>Subtotal</span><span>{{ subtotal_display }}</span></div>
-            <div class="row"><span>Delivery</span><span>{{ delivery_fee_display }}</span></div>
-            <div class="row total"><span>Total</span><span>{{ total_display }}</span></div>
-          </div>
-
-          <div class="actions">
-            <a class="btn btn-ghost" href="/cart">Back to cart</a>
-
-            <a class="btn btn-ghost" target="_blank"
-               href="https://wa.me/{{ whatsapp_number }}">
-              Order via WhatsApp
-            </a>
-
-            {% if yoco_enabled %}
-              <form action="/pay/yoco/start" method="POST" style="margin:0;">
-                <button class="btn" type="submit">Pay with Yoco</button>
-              </form>
-            {% else %}
-              <div class="muted">Yoco not connected (set YOCO_SECRET_KEY on Render).</div>
-            {% endif %}
-          </div>
-
-          <p class="muted small" style="margin-top:10px;">
-            Please enjoy responsibly. Not for sale to persons under 18.
-          </p>
+              <div class="line-price">{{ "R" ~ (l.line_cents/100) }}</div>
+            </div>
+          {% endfor %}
         </div>
 
-        <div class="card">
-          <h2>Delivery details</h2>
+        <hr/>
 
-          <form method="POST" class="form">
-            <div class="grid">
-              <div>
-                <label>Delivery method</label>
-                <select name="delivery_method">
-                  <option value="pickup" {% if delivery_method=="pickup" %}selected{% endif %}>Pickup (Free)</option>
-                  <option value="delivery" {% if delivery_method=="delivery" %}selected{% endif %}>Delivery (R80)</option>
-                </select>
-              </div>
-
-              <div>
-                <label>Your name</label>
-                <input name="customer_name" placeholder="e.g. Nkosi" value="{{ session.get('customer_name','') }}">
-              </div>
-
-              <div>
-                <label>Phone</label>
-                <input name="customer_phone" placeholder="e.g. 07..." value="{{ session.get('customer_phone','') }}">
-              </div>
-
-              <div>
-                <label>Address (if delivery)</label>
-                <input name="customer_address" placeholder="Street, suburb, city" value="{{ session.get('customer_address','') }}">
-              </div>
+        <form method="POST" class="form">
+          <div class="grid">
+            <div>
+              <label>Delivery</label>
+              <select name="delivery_method">
+                <option value="pickup" {% if delivery_method=="pickup" %}selected{% endif %}>Pickup (Free)</option>
+                <option value="delivery" {% if delivery_method=="delivery" %}selected{% endif %}>Delivery (R80)</option>
+              </select>
             </div>
 
-            <button class="btn" type="submit">Update details</button>
+            <div>
+              <label>Your name</label>
+              <input name="customer_name" placeholder="e.g. Nkosi" value="{{ session.get('customer_name','') }}">
+            </div>
+
+            <div>
+              <label>Phone</label>
+              <input name="customer_phone" placeholder="e.g. 07..." value="{{ session.get('customer_phone','') }}">
+            </div>
+
+            <div>
+              <label>Address (if delivery)</label>
+              <input name="customer_address" placeholder="Street, suburb, city" value="{{ session.get('customer_address','') }}">
+            </div>
+          </div>
+
+          <button class="btn" type="submit">Update details</button>
+        </form>
+
+        <div class="totals">
+          <div class="row"><span>Subtotal</span><span>{{ subtotal_display }}</span></div>
+          <div class="row"><span>Delivery</span><span>{{ delivery_fee_display }}</span></div>
+          <div class="row total"><span>Total</span><span>{{ total_display }}</span></div>
+        </div>
+
+        <div class="actions">
+          <form action="/cart/clear" method="POST">
+            <button class="btn btn-ghost" type="submit">Clear cart</button>
           </form>
 
-          <div class="muted small" style="margin-top:10px;">
-            Next step: Courier Guy will calculate delivery automatically (instead of fixed R80).
-          </div>
+          <a class="btn btn-ghost" target="_blank" href="https://wa.me/{{ whatsapp_number }}">
+            Order via WhatsApp
+          </a>
+
+          {% if yoco_enabled %}
+            <form action="/pay/yoco/start" method="POST">
+              <button class="btn" type="submit">Pay with Yoco</button>
+            </form>
+          {% else %}
+            <div class="muted" style="align-self:center;">Yoco not connected yet.</div>
+          {% endif %}
         </div>
+
+        <p class="muted" style="margin-top:10px;">
+          Please enjoy responsibly. Not for sale to persons under 18.
+        </p>
       </div>
     {% endif %}
   </div>

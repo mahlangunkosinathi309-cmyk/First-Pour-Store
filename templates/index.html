@@ -1,15 +1,14 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>First Pour Store</title>
+  <title>First Pour</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
   <div class="container">
-    <!-- Header -->
     <div class="topbar">
       <a href="/" class="brand">
         <img src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour" class="logo"/>
@@ -20,136 +19,101 @@
       </a>
 
       <div class="topbar-right">
-        <a class="navlink" href="/cart">
-          Cart <span id="cartBadge" class="badge">{{ cart_count }}</span>
+        <a class="btn btn-ghost" href="#shop">Shop</a>
+
+        <a class="btn btn-ghost" href="/checkout">
+          Cart
+          {% if cart_qty and cart_qty > 0 %}
+            <span class="badge">{{ cart_qty }}</span>
+          {% endif %}
         </a>
-        <a class="navlink whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp</a>
+
+        <a class="btn" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
       </div>
     </div>
 
-    <!-- Hero -->
-    <section class="hero">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="flash">
+          {% for m in messages %}
+            <div class="flash-item">{{ m }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="hero">
       <div class="hero-left">
         <div class="kicker">CRAFTED IN COLESBERG · SOUTH AFRICA</div>
-        <h1>The First Pour of <span class="gold">something greater.</span></h1>
+        <h1>The First Pour of <span class="gold">something greater</span>.</h1>
         <p class="lead">
           Premium spirits made for celebrations, dinners and smooth weekends.
-          Add to cart, then checkout when you’re ready.
+          Add to cart, then checkout. We confirm delivery & payment on WhatsApp.
         </p>
+        <p class="muted">Please enjoy responsibly. Not for sale to persons under the age of 18.</p>
 
         <div class="hero-actions">
           <a class="btn" href="#shop">Shop now</a>
           <a class="btn btn-ghost" target="_blank" href="https://wa.me/{{ whatsapp_number }}">Chat</a>
-          <a class="btn btn-ghost" href="/cart">View cart</a>
         </div>
-
-        <p class="muted small">
-          Please enjoy responsibly. Not for sale to persons under 18.
-        </p>
       </div>
 
       <div class="hero-right">
-        <div class="hero-card">
-          <img class="hero-image" src="{{ url_for('static', filename='img/first-pour-gin.jpg') }}" alt="First Pour London Dry Gin">
+        <div class="hero-image-card">
+          <img src="{{ url_for('static', filename='img/first-pour-gin.jpg') }}" alt="First Pour Gin">
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- Products -->
-    <section id="shop" class="shop">
+    <section id="shop" class="section">
       <div class="section-head">
         <h2>Shop</h2>
-        <p class="muted">Add items to your cart. Checkout when ready (Yoco or WhatsApp).</p>
+        <p class="muted">Add to cart (you’ll stay on this page). Go to checkout when you’re ready.</p>
       </div>
 
-      <div class="grid-3">
+      <div class="grid3">
         {% for p in products %}
-          <div class="product-card">
+          <div class="card product">
             <img class="product-img" src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}">
             <div class="product-body">
               <div class="product-name">{{ p.name }}</div>
               <div class="product-desc">{{ p.desc }}</div>
-
-              <div class="product-bottom">
+              <div class="product-row">
                 <div class="price">{{ p.price_display }}</div>
 
-                <form class="addForm" action="/cart/add" method="POST">
+                <form class="addform" action="/cart/add" method="POST">
                   <input type="hidden" name="product_id" value="{{ p.id }}">
-                  <input type="hidden" name="qty" value="1">
-                  <button class="btn btn-small" type="submit">Add to cart</button>
+                  <input class="qty" type="number" name="qty" value="1" min="1" max="99">
+                  <button class="btn" type="submit">Add to cart</button>
                 </form>
               </div>
             </div>
           </div>
         {% endfor %}
       </div>
-    </section>
 
-    <!-- Signup -->
-    <section id="signup" class="signup">
-      <div class="signup-card">
-        <div>
-          <h3>Get updates & drops</h3>
-          <p class="muted">Be first to know when new flavours land and specials drop.</p>
-        </div>
-
-        <form action="/subscribe" method="POST" class="signup-form">
-          <input name="email" type="email" placeholder="Your email address" required>
-          <button class="btn" type="submit">Join</button>
-        </form>
-
-        {% if session.get("signup_ok") %}
-          <div class="toast success" style="margin-top:10px;">
-            ✅ Thanks — you’re on the list.
-          </div>
-          {% set _ = session.pop("signup_ok") %}
-        {% endif %}
+      <div style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
+        <a class="btn" href="/checkout">Go to checkout</a>
+        <a class="btn btn-ghost" target="_blank" href="https://wa.me/{{ whatsapp_number }}">Order via WhatsApp</a>
       </div>
     </section>
 
-    <!-- Footer -->
+    <section id="newsletter" class="section">
+      <div class="section-head">
+        <h2>Get updates</h2>
+        <p class="muted">Drop your email — we’ll notify you about new drops and specials.</p>
+      </div>
+
+      <form class="newsletter" method="POST" action="/subscribe">
+        <input name="email" type="email" placeholder="you@example.com" required>
+        <button class="btn" type="submit">Subscribe</button>
+      </form>
+    </section>
+
     <footer class="footer">
-      <div class="muted small">© First Pour · Crafted in South Africa</div>
+      <div class="muted">© {{ 2026 }} First Pour • Crafted in South Africa</div>
     </footer>
   </div>
-
-  <!-- Toast -->
-  <div id="toast" class="toast" style="display:none;"></div>
-
-  <script>
-    function showToast(msg, ok=true) {
-      const t = document.getElementById("toast");
-      t.textContent = msg;
-      t.className = "toast " + (ok ? "success" : "error");
-      t.style.display = "block";
-      setTimeout(()=> { t.style.display = "none"; }, 2200);
-    }
-
-    // AJAX add-to-cart so it doesn't redirect
-    document.querySelectorAll(".addForm").forEach(form => {
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const fd = new FormData(form);
-
-        try {
-          const res = await fetch("/cart/add", {
-            method: "POST",
-            headers: { "X-Requested-With": "XMLHttpRequest" },
-            body: fd
-          });
-          const data = await res.json();
-          if (!data.ok) {
-            showToast("Could not add to cart", false);
-            return;
-          }
-          document.getElementById("cartBadge").textContent = data.cart_count;
-          showToast("Added to cart ✅", true);
-        } catch (err) {
-          showToast("Network error", false);
-        }
-      });
-    });
-  </script>
 
 </body>
 </html>
