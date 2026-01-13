@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>First Pour</title>
+  <title>First Pour Store</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
+
   <div class="container">
+    <!-- Header -->
     <div class="topbar">
       <a href="/" class="brand">
         <img src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour" class="logo"/>
@@ -16,83 +18,138 @@
           <div class="brand-sub">First pour of something greater</div>
         </div>
       </a>
+
       <div class="topbar-right">
-        <div>Orders & enquiries</div>
-        <a class="whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
+        <a class="navlink" href="/cart">
+          Cart <span id="cartBadge" class="badge">{{ cart_count }}</span>
+        </a>
+        <a class="navlink whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp</a>
       </div>
     </div>
 
+    <!-- Hero -->
     <section class="hero">
       <div class="hero-left">
-        <div class="kicker">CRAFTED IN COLESBERG • SOUTH AFRICA</div>
-        <h1>The First Pour of <span>something</span> greater.</h1>
+        <div class="kicker">CRAFTED IN COLESBERG · SOUTH AFRICA</div>
+        <h1>The First Pour of <span class="gold">something greater.</span></h1>
         <p class="lead">
           Premium spirits made for celebrations, dinners and smooth weekends.
-          Add to cart, checkout, and we confirm delivery and payment on WhatsApp.
+          Add to cart, then checkout when you’re ready.
         </p>
-        <p class="muted">Please enjoy responsibly. Not for sale to persons under the age of 18.</p>
 
         <div class="hero-actions">
           <a class="btn" href="#shop">Shop now</a>
           <a class="btn btn-ghost" target="_blank" href="https://wa.me/{{ whatsapp_number }}">Chat</a>
+          <a class="btn btn-ghost" href="/cart">View cart</a>
         </div>
 
-        <div class="mini-cards">
-          {% for p in products %}
-          <div class="mini-card">
-            <img src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}">
-            <div>
-              <div class="mini-title">{{ p.name.split('–')[-1].strip() }}</div>
-              <div class="mini-sub">{{ p.desc }}</div>
-            </div>
-          </div>
-          {% endfor %}
-        </div>
+        <p class="muted small">
+          Please enjoy responsibly. Not for sale to persons under 18.
+        </p>
       </div>
 
       <div class="hero-right">
         <div class="hero-card">
-          <img class="hero-label" src="{{ url_for('static', filename='img/first-pour-gin.jpg') }}" alt="First Pour Gin">
+          <img class="hero-image" src="{{ url_for('static', filename='img/first-pour-gin.jpg') }}" alt="First Pour London Dry Gin">
         </div>
       </div>
     </section>
 
+    <!-- Products -->
     <section id="shop" class="shop">
-      <div class="shop-head">
+      <div class="section-head">
         <h2>Shop</h2>
-        <p class="muted">Add bottles to cart, then checkout. Pickup (free) or Delivery (R80).</p>
+        <p class="muted">Add items to your cart. Checkout when ready (Yoco or WhatsApp).</p>
       </div>
 
-      <div class="grid">
+      <div class="grid-3">
         {% for p in products %}
-        <div class="product">
-          <img src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}">
-          <div class="product-body">
-            <h3>{{ p.name.split('–')[-1].strip() }}</h3>
-            <div class="muted">{{ p.desc }}</div>
-            <div class="price">{{ p.price_display }}</div>
+          <div class="product-card">
+            <img class="product-img" src="{{ url_for('static', filename='img/' + p.img) }}" alt="{{ p.name }}">
+            <div class="product-body">
+              <div class="product-name">{{ p.name }}</div>
+              <div class="product-desc">{{ p.desc }}</div>
 
-            <form action="/cart/add" method="POST" class="add-form">
-              <input type="hidden" name="product_id" value="{{ p.id }}">
-              <select name="qty">
-                <option value="1">Qty 1</option>
-                <option value="2">Qty 2</option>
-                <option value="3">Qty 3</option>
-                <option value="6">Qty 6</option>
-              </select>
-              <button class="btn" type="submit">Add to cart</button>
-            </form>
+              <div class="product-bottom">
+                <div class="price">{{ p.price_display }}</div>
 
-            <a class="btn btn-ghost" href="/checkout">Go to checkout</a>
+                <form class="addForm" action="/cart/add" method="POST">
+                  <input type="hidden" name="product_id" value="{{ p.id }}">
+                  <input type="hidden" name="qty" value="1">
+                  <button class="btn btn-small" type="submit">Add to cart</button>
+                </form>
+              </div>
+            </div>
           </div>
-        </div>
         {% endfor %}
       </div>
     </section>
 
+    <!-- Signup -->
+    <section id="signup" class="signup">
+      <div class="signup-card">
+        <div>
+          <h3>Get updates & drops</h3>
+          <p class="muted">Be first to know when new flavours land and specials drop.</p>
+        </div>
+
+        <form action="/subscribe" method="POST" class="signup-form">
+          <input name="email" type="email" placeholder="Your email address" required>
+          <button class="btn" type="submit">Join</button>
+        </form>
+
+        {% if session.get("signup_ok") %}
+          <div class="toast success" style="margin-top:10px;">
+            ✅ Thanks — you’re on the list.
+          </div>
+          {% set _ = session.pop("signup_ok") %}
+        {% endif %}
+      </div>
+    </section>
+
+    <!-- Footer -->
     <footer class="footer">
-      <div class="muted">© First Pour • Please enjoy responsibly • 18+</div>
+      <div class="muted small">© First Pour · Crafted in South Africa</div>
     </footer>
   </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" style="display:none;"></div>
+
+  <script>
+    function showToast(msg, ok=true) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.className = "toast " + (ok ? "success" : "error");
+      t.style.display = "block";
+      setTimeout(()=> { t.style.display = "none"; }, 2200);
+    }
+
+    // AJAX add-to-cart so it doesn't redirect
+    document.querySelectorAll(".addForm").forEach(form => {
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const fd = new FormData(form);
+
+        try {
+          const res = await fetch("/cart/add", {
+            method: "POST",
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+            body: fd
+          });
+          const data = await res.json();
+          if (!data.ok) {
+            showToast("Could not add to cart", false);
+            return;
+          }
+          document.getElementById("cartBadge").textContent = data.cart_count;
+          showToast("Added to cart ✅", true);
+        } catch (err) {
+          showToast("Network error", false);
+        }
+      });
+    });
+  </script>
+
 </body>
 </html>

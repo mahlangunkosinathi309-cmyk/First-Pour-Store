@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Your Cart | First Pour</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a href="/" class="brand">
+        <img src="{{ url_for('static', filename='img/logo-first-pour.jpg') }}" alt="First Pour" class="logo"/>
+        <div>
+          <div class="brand-title">FIRST POUR</div>
+          <div class="brand-sub">First pour of something greater</div>
+        </div>
+      </a>
+
+      <div class="topbar-right">
+        <a class="navlink" href="/cart">
+          Cart <span class="badge">{{ cart_count }}</span>
+        </a>
+        <a class="navlink whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp</a>
+      </div>
+    </div>
+
+    <h1 style="margin-top:18px;">Your cart</h1>
+
+    {% if not lines %}
+      <div class="card">
+        <p>Your cart is empty.</p>
+        <a class="btn" href="/#shop">Shop now</a>
+      </div>
+    {% else %}
+      <div class="card">
+        <form action="/cart/update" method="POST">
+          <div class="cart-lines">
+            {% for l in lines %}
+              <div class="cart-line">
+                <img class="cart-img" src="{{ url_for('static', filename='img/' + l.img) }}" alt="{{ l.name }}">
+                <div class="cart-info">
+                  <div class="cart-name">{{ l.name }}</div>
+                  <div class="muted">{{ l.unit_display }} each</div>
+                </div>
+
+                <div class="cart-qty">
+                  <label class="muted small">Qty</label>
+                  <input type="number" min="0" max="99" name="qty_{{ l.id }}" value="{{ l.qty }}">
+                </div>
+
+                <div class="cart-price">{{ ("R" ~ (l.line_cents/100))|replace(".0","") }}</div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div class="cart-footer">
+            <div class="muted">Subtotal</div>
+            <div class="price">{{ subtotal_display }}</div>
+          </div>
+
+          <div class="actions">
+            <button class="btn btn-ghost" type="submit">Update cart</button>
+            <a class="btn" href="/checkout">Go to checkout</a>
+            <a class="btn btn-ghost" href="/#shop">Continue shopping</a>
+          </div>
+        </form>
+
+        <form action="/cart/clear" method="POST" style="margin-top:10px;">
+          <button class="btn btn-ghost" type="submit">Clear cart</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+</body>
+</html>
