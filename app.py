@@ -2,8 +2,12 @@
 import uuid
 import requests
 from flask import Flask, render_template, request, redirect, url_for, session, abort, flash
+from courier_guy import courier_bp
+
 
 app = Flask(__name__)
+app.register_blueprint(courier_bp)
+
 app.secret_key = os.getenv("FLASK_SECRET_KEY") or os.getenv("SECRET_KEY") or "dev-secret-change-me"
 
 WHATSAPP_NUMBER = os.getenv("WHATSAPP_NUMBER", "27645277314")
