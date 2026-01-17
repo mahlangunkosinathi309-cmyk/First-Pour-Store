@@ -1,11 +1,12 @@
-﻿import os
+# -*- coding: utf-8 -*-
+import os
 import uuid
 from urllib.parse import quote
 
 import requests
 from flask import Flask, render_template, request, redirect, url_for, session, abort
 
-from courier_guy import get_best_rate
+from services.shiplogic_rates import get_rates, normalize_zone
 
 app = Flask(__name__)
 
@@ -31,12 +32,11 @@ PROVINCES = [
     "Northern Cape (NC)",
 ]
 
-
 PRODUCTS = [
     {
         "id": "gin",
         "name": "First Pour – London Dry Gin",
-        "price": 35000,
+        "price": 35000,  # cents
         "price_display": "R350",
         "desc": "Crisp · Aromatic · Classic",
         "img": "first-pour-gin.jpg",
@@ -44,7 +44,7 @@ PRODUCTS = [
     {
         "id": "vodka",
         "name": "First Pour – Vanilla Vodka",
-        "price": 35000,
+        "price": 35000,  # cents
         "price_display": "R350",
         "desc": "Smooth · Sweet · Velvety",
         "img": "first-pour-vodka.jpg",
@@ -52,7 +52,7 @@ PRODUCTS = [
     {
         "id": "whitewine",
         "name": "First Pour – Sweet White Wine",
-        "price": 20000,
+        "price": 20000,  # cents
         "price_display": "R200",
         "desc": "Light · Juicy · Sweet",
         "img": "first-pour-white-wine.jpg",
@@ -121,6 +121,68 @@ def cart_count(cart: dict) -> int:
     return c
 
 
+def _province_code_from_label(label: str) -> str:
+    """
+    "Gauteng (GP)" -> "GP"
+    If not found, returns label trimmed (so you can still pass full zone names if needed).
+    """
+    s = (label or "").strip()
+    if "(" in s and ")" in s:
+        code = s.split("(")[-1].split(")")[0].strip()
+        return code
+    return s
+
+
+def _extract_rates_list(shiplogic_json: dict):
+    """
+    Shiplogic responses can vary by account / version.
+    Try common keys and return a list.
+    """
+    if not isinstance(shiplogic_json, dict):
+        return []
+    for key in ["rates", "service_levels", "results", "data"]:
+        v = shiplogic_json.get(key)
+        if isinstance(v, list):
+            return v
+    # Sometimes it's already a list-like dict; fallback
+    return []
+
+
+def _rate_name(item: dict) -> str:
+    return (
+        item.get("service_level_name")
+        or item.get("service_level")
+        or item.get("name")
+        or item.get("courier")
+        or "Courier"
+    )
+
+
+def _rate_amount_to_cents(item: dict) -> int:
+    """
+    Try common amount keys. Convert to cents.
+    Some APIs return rands, some cents; we use a safe heuristic.
+    """
+    amount = (
+        item.get("total")
+        or item.get("total_price")
+        or item.get("price")
+        or item.get("rate")
+        or item.get("amount")
+        or 0
+    )
+    try:
+        amt = float(amount)
+    except:
+        amt = 0.0
+
+    # Heuristic: if value looks like rands (typical local delivery < 5000),
+    # convert rands->cents. If huge, assume it's already cents.
+    if amt <= 10000:
+        return int(round(amt * 100))
+    return int(round(amt))
+
+
 @app.route("/")
 def index():
     return render_template("index.html", products=PRODUCTS, whatsapp_number=WHATSAPP_NUMBER)
@@ -156,6 +218,7 @@ def cart_clear():
     session["delivery_fee_cents"] = 0
     session["cg_quote_raw"] = None
     session["cg_error"] = ""
+    session["cg_rates"] = []
     return redirect(url_for("checkout"))
 
 
@@ -174,7 +237,7 @@ def checkout():
     if delivery_method == "pickup":
         delivery_fee = 0
     elif delivery_method == "flat":
-        delivery_fee = 8000  # R80
+        delivery_fee = 8000  # R80 (legacy fixed delivery)
     elif delivery_method == "courier_guy":
         delivery_fee = int(session.get("delivery_fee_cents", 0) or 0)
     else:
@@ -188,8 +251,7 @@ def checkout():
     cg_quote_raw = session.get("cg_quote_raw", None)
     cg_quote_text = ""
     if isinstance(cg_quote_raw, dict):
-        # show something readable
-        cg_quote_text = str(cg_quote_raw.get("service_level", "")) or "Quote loaded"
+        cg_quote_text = _rate_name(cg_quote_raw)
 
     customer_name = session.get("customer_name", "")
     customer_phone = session.get("customer_phone", "")
@@ -200,10 +262,14 @@ def checkout():
     cg_postal = session.get("cg_postal", "")
     cg_province = session.get("cg_province", "Gauteng (GP)")
 
-    whatsapp_text = f"Hi First Pour. I want to order:%0A"
+    whatsapp_text = "Hi First Pour. I want to order:%0A"
     for l in lines:
-        whatsapp_text += f"- {l['name']} x{l['qty']}%0A"
-    whatsapp_text += f"%0ASubtotal: {cents_to_zar(subtotal)}%0ADelivery: {cents_to_zar(delivery_fee)}%0ATotal: {cents_to_zar(total)}"
+        whatsapp_text += f"- {quote(l['name'])} x{l['qty']}%0A"
+    whatsapp_text += (
+        f"%0ASubtotal: {quote(cents_to_zar(subtotal))}"
+        f"%0ADelivery: {quote(cents_to_zar(delivery_fee))}"
+        f"%0ATotal: {quote(cents_to_zar(total))}"
+    )
 
     return render_template(
         "checkout.html",
@@ -249,45 +315,88 @@ def checkout_details():
     session["delivery_fee_cents"] = 0
     session["cg_quote_raw"] = None
     session["cg_error"] = ""
+    session["cg_rates"] = []
 
     return redirect(url_for("checkout"))
 
 
 @app.route("/courier/quote", methods=["POST"])
 def courier_quote():
+    """
+    Courier Guy (Shiplogic) rates.
+    Requires Render env: TCG_API_KEY and STORE_* fields configured correctly.
+    """
     session["cg_error"] = ""
     session["cg_quote_raw"] = None
     session["delivery_fee_cents"] = 0
+    session["cg_rates"] = []
 
-    cart_lines_cache = session.get("cart_lines_cache", [])
-    if not cart_lines_cache:
+    cart = session.get("cart", {})
+    subtotal_cents = cart_total_cents(cart)
+    if subtotal_cents <= 0:
         session["cg_error"] = "Cart empty. Add items first."
         return redirect(url_for("checkout"))
+
+    # Delivery address from session fields
+    street = (session.get("cg_street") or "").strip()
+    suburb = (session.get("cg_suburb") or "").strip()
+    city = (session.get("cg_city") or "").strip()
+    code = (session.get("cg_postal") or "").strip()
+    province_label = (session.get("cg_province") or "Gauteng (GP)").strip()
+
+    # Basic validation to avoid useless API calls
+    if not street or not suburb or not city or not code or not province_label:
+        session["cg_error"] = "Fill Street, Suburb, City, Postal code, and Province before quoting."
+        return redirect(url_for("checkout"))
+
+    province_code = _province_code_from_label(province_label)  # GP/NW/...
+    zone = normalize_zone(province_code)  # -> "Gauteng" / "North West" / etc
 
     delivery_address = {
         "type": "residential",
         "company": "",
-        "street_address": (session.get("cg_street") or "").strip(),
-        "local_area": (session.get("cg_suburb") or "").strip(),
-        "city": (session.get("cg_city") or "").strip(),
-        "zone": (session.get("cg_province") or "Gauteng (GP)").split(" (")[0].strip() or "Gauteng",
+        "street_address": street,
+        "local_area": suburb,
+        "city": city,
+        "zone": zone,
         "country": "ZA",
-        "code": (session.get("cg_postal") or "").strip(),
+        "code": code,
     }
 
-    # basic validation to avoid 404 nonsense
-    if not delivery_address["street_address"] or not delivery_address["city"] or not delivery_address["code"]:
-        session["cg_error"] = "Fill Street address, City, and Postal code before quoting."
-        return redirect(url_for("checkout"))
+    declared_value_rands = max(1, int(round(subtotal_cents / 100)))
 
     try:
-        best, best_price = get_best_rate(delivery_address, cart_lines_cache)
-        # best_price is in ZAR (usually). Convert to cents safely.
-        fee_cents = int(round(float(best_price) * 100))
-        session["delivery_fee_cents"] = max(0, fee_cents)
-        session["cg_quote_raw"] = best
+        data = get_rates(delivery_address=delivery_address, declared_value=declared_value_rands)
+        raw_rates = _extract_rates_list(data)
+
+        if not raw_rates:
+            # Still store full response to help you debug if needed
+            session["cg_error"] = f"No rates returned. Response: {data}"
+            return redirect(url_for("checkout"))
+
+        normalized = []
+        for item in raw_rates:
+            if not isinstance(item, dict):
+                continue
+            fee_cents = _rate_amount_to_cents(item)
+            normalized.append(
+                {
+                    "name": _rate_name(item),
+                    "fee_cents": max(0, int(fee_cents)),
+                    "raw": item,
+                }
+            )
+
+        normalized.sort(key=lambda x: x["fee_cents"])
+        session["cg_rates"] = normalized
+
+        # Pick cheapest as default
+        best = normalized[0]
+        session["delivery_fee_cents"] = best["fee_cents"]
+        session["cg_quote_raw"] = best["raw"]
         session["cg_error"] = ""
         session["delivery_method"] = "courier_guy"
+
     except Exception as e:
         session["cg_error"] = str(e)
 
@@ -338,21 +447,19 @@ def yoco_start():
             "delivery_cents": delivery_fee,
         },
         "lineItems": [
-    {
-        "displayName": l["name"],
-        "quantity": l["qty"],
-        "pricingDetails": {
-            "price": l["unit_cents"],
-            "currency": "ZAR",
-        },
-
-        # keep these too (harmless, helps if YOCO accepts older fields)
-        "name": l["name"],
-        "unitPrice": l["unit_cents"],
-    }
-    for l in lines
-],
-
+            {
+                "displayName": l["name"],
+                "quantity": l["qty"],
+                "pricingDetails": {
+                    "price": l["unit_cents"],
+                    "currency": "ZAR",
+                },
+                # keep these too (harmless, helps if YOCO accepts older fields)
+                "name": l["name"],
+                "unitPrice": l["unit_cents"],
+            }
+            for l in lines
+        ],
     }
 
     headers = {
