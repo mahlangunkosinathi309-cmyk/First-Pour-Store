@@ -1,19 +1,10 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Checkout | First Pour</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  <style>
-    .banner-error{background:#3a1212;border:1px solid #7a2b2b;color:#ffd6d6;padding:12px 14px;border-radius:12px;margin:12px 0;}
-    .banner-ok{background:#0f2a18;border:1px solid #2e6b44;color:#d6ffe6;padding:12px 14px;border-radius:12px;margin:12px 0;}
-    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
-    @media (max-width: 900px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
-    input, select{width:100%}
-    .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-  </style>
 </head>
 <body>
   <div class="container" style="max-width: 980px;">
@@ -25,29 +16,24 @@
           <div class="brand-sub">First pour of something greater</div>
         </div>
       </a>
-
       <div class="topbar-right">
-        <a class="btn btn-ghost" href="/">Back to shop</a>
-        <a class="btn btn-ghost" href="/checkout">Cart ({{ cart_count }})</a>
-        <a class="whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
+        <div><strong>Cart:</strong> {{ cart_count }}</div>
+        <a class="btn btn-ghost" href="/">Continue shopping</a>
       </div>
     </div>
 
     <h1 style="margin-top:18px;">Checkout</h1>
 
     {% if cg_error %}
-      <div class="banner-error">{{ cg_error }}</div>
-    {% endif %}
-
-    {% if cg_quote_text %}
-      <div class="banner-ok">Courier Guy quote loaded: <strong>{{ cg_quote_text }}</strong></div>
+      <div class="card" style="border:1px solid #c0392b; background:#fff5f5;">
+        <strong>Error:</strong> {{ cg_error }}
+      </div>
     {% endif %}
 
     {% if not lines %}
       <p>Your cart is empty. Go back and add products.</p>
       <a class="btn" href="/">Back to shop</a>
     {% else %}
-
       <div class="card" style="margin-top:14px;">
         <h2>Your items</h2>
 
@@ -56,61 +42,61 @@
             <div class="line">
               <div class="line-name">
                 <strong>{{ l.name }}</strong>
-                <div class="muted">{{ l.unit_display }} × {{ l.qty }}</div>
+                <div class="muted">{{ l.unit_display }} x {{ l.qty }}</div>
               </div>
-              <div class="line-price">R{{ (l.line_cents/100)|round(0) }}</div>
+              <div class="line-price">R{{ (l.line_cents/100)|round(2) }}</div>
             </div>
           {% endfor %}
         </div>
 
         <hr/>
 
+        <!-- DETAILS FORM -->
         <form method="POST" action="/checkout/details" class="form">
-          <div class="grid3">
+          <div class="grid">
             <div>
               <label>Delivery method</label>
               <select name="delivery_method">
                 <option value="pickup" {% if delivery_method=="pickup" %}selected{% endif %}>Pickup (Free)</option>
-                <option value="flat" {% if delivery_method=="flat" %}selected{% endif %}>Delivery (R80)</option>
-                <option value="courier_guy" {% if delivery_method=="courier_guy" %}selected{% endif %}>Delivery (Courier Guy quote)</option>
+                <option value="courier_guy" {% if delivery_method=="courier_guy" %}selected{% endif %}>Courier delivery (Get quote)</option>
               </select>
             </div>
 
             <div>
               <label>Your name</label>
-              <input name="customer_name" value="{{ customer_name }}" placeholder="e.g. Nkosi">
+              <input name="customer_name" placeholder="e.g. Nkosi" value="{{ customer_name }}">
             </div>
 
             <div>
               <label>Phone</label>
-              <input name="customer_phone" value="{{ customer_phone }}" placeholder="e.g. 07...">
+              <input name="customer_phone" placeholder="e.g. 07..." value="{{ customer_phone }}">
             </div>
-          </div>
 
-          <div class="grid3" style="margin-top:10px;">
             <div>
               <label>Email</label>
-              <input name="customer_email" value="{{ customer_email }}" placeholder="you@email.com">
+              <input name="customer_email" placeholder="e.g. you@gmail.com" value="{{ customer_email }}">
             </div>
-            <div>
-              <label>Street address (delivery)</label>
-              <input name="cg_street" value="{{ cg_street }}" placeholder="Street + number">
-            </div>
-            <div>
-              <label>Suburb / local area</label>
-              <input name="cg_suburb" value="{{ cg_suburb }}" placeholder="Suburb">
-            </div>
-          </div>
 
-          <div class="grid3" style="margin-top:10px;">
+            <div>
+              <label>Street address</label>
+              <input name="cg_street" placeholder="House no + street" value="{{ cg_street }}">
+            </div>
+
+            <div>
+              <label>Suburb</label>
+              <input name="cg_suburb" placeholder="Suburb / area" value="{{ cg_suburb }}">
+            </div>
+
             <div>
               <label>City</label>
-              <input name="cg_city" value="{{ cg_city }}" placeholder="City">
+              <input name="cg_city" placeholder="City" value="{{ cg_city }}">
             </div>
+
             <div>
               <label>Postal code</label>
-              <input name="cg_postal" value="{{ cg_postal }}" placeholder="0000">
+              <input name="cg_postal" placeholder="e.g. 0081" value="{{ cg_postal }}">
             </div>
+
             <div>
               <label>Province</label>
               <select name="cg_province">
@@ -121,22 +107,18 @@
             </div>
           </div>
 
-          <div class="btn-row">
-            <button class="btn" type="submit">Save details</button>
-
-            {% if delivery_method == "courier_guy" %}
-              <form action="/courier/quote" method="POST">
-                <button class="btn btn-ghost" type="submit">Get delivery quote</button>
-              </form>
-            {% endif %}
-          </div>
-
-          <p class="muted" style="margin-top:10px;">
-            If you chose “Courier Guy quote”, click <strong>Save details</strong> first, then <strong>Get delivery quote</strong>.
-          </p>
+          <button class="btn" type="submit">Save delivery details</button>
         </form>
 
-        <div class="totals" style="margin-top:10px;">
+        <!-- QUOTE BUTTON (SEPARATE FORM - this is the fix) -->
+        <form method="POST" action="/courier/quote" style="margin-top:12px;">
+          <button class="btn" type="submit">Get a quote (Courier Guy)</button>
+          {% if cg_quote_text %}
+            <span class="muted" style="margin-left:10px;">Quote loaded: {{ cg_quote_text }}</span>
+          {% endif %}
+        </form>
+
+        <div class="totals" style="margin-top:16px;">
           <div class="row"><span>Subtotal</span><span>{{ subtotal_display }}</span></div>
           <div class="row"><span>Delivery</span><span>{{ delivery_fee_display }}</span></div>
           <div class="row total"><span>Total</span><span>{{ total_display }}</span></div>
@@ -148,7 +130,7 @@
           </form>
 
           <a class="btn btn-ghost" target="_blank"
-             href="https://wa.me/{{ whatsapp_number }}?text={{ whatsapp_text|urlencode }}">
+             href="https://wa.me/{{ whatsapp_number }}?text={{ whatsapp_text }}">
             Order via WhatsApp
           </a>
 
@@ -157,9 +139,7 @@
               <button class="btn" type="submit">Pay with Yoco</button>
             </form>
           {% else %}
-            <div class="muted" style="align-self:center;">
-              Yoco not connected yet (set YOCO_SECRET_KEY on Render).
-            </div>
+            <div class="muted" style="align-self:center;">Yoco not connected (set YOCO_SECRET_KEY on Render)</div>
           {% endif %}
         </div>
 

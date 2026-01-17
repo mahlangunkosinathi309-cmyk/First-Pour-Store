@@ -2,19 +2,21 @@
 import datetime as _dt
 import requests
 
+SHIPLOGIC_RATES_URL = os.getenv("SHIPLOGIC_RATES_URL", "https://api.shiplogic.com/rates").strip()
 
-def normalize_zone(province: str) -> str:
+def normalize_zone(province_or_code: str) -> str:
     """
-    Shiplogic zones are typically province names (e.g. Gauteng, Western Cape).
-    Your UI uses 'Gauteng (GP)' etc.
-    This converts 'Gauteng (GP)' -> 'Gauteng'
+    Converts GP/WC/etc or 'Gauteng (GP)' into Shiplogic zone names.
     """
-    if not province:
+    if not province_or_code:
         return "Gauteng"
-    province = province.strip()
-    if " (" in province:
-        province = province.split(" (")[0].strip()
-    # Accept short codes too
+
+    s = province_or_code.strip()
+
+    # "Gauteng (GP)" -> "Gauteng"
+    if " (" in s:
+        s = s.split(" (")[0].strip()
+
     code_map = {
         "GP": "Gauteng",
         "WC": "Western Cape",
@@ -26,49 +28,85 @@ def normalize_zone(province: str) -> str:
         "NW": "North West",
         "NC": "Northern Cape",
     }
-    if province in code_map:
-        return code_map[province]
-    return province
 
+    return code_map.get(s, s)
 
-def _today_yyyy_mm_dd() -> str:
+def _today() -> str:
     return _dt.date.today().strftime("%Y-%m-%d")
 
-
-def get_rates(payload: dict) -> dict:
+def _collection_address_from_env() -> dict:
     """
-    Shiplogic rates endpoint:
+    Your store/warehouse address (collection point).
+    Set these on Render.
+    """
+    return {
+        "type": os.getenv("SL_FROM_TYPE", "business"),
+        "company": os.getenv("SL_FROM_COMPANY", "First Pour"),
+        "street_address": os.getenv("SL_FROM_STREET", "").strip(),
+        "local_area": os.getenv("SL_FROM_LOCAL_AREA", "").strip(),
+        "city": os.getenv("SL_FROM_CITY", "").strip(),
+        "zone": os.getenv("SL_FROM_ZONE", "Gauteng").strip(),  # must be province name
+        "country": os.getenv("SL_FROM_COUNTRY", "ZA").strip(),
+        "code": os.getenv("SL_FROM_CODE", "").strip(),
+    }
+
+def _parcels_default(total_qty: int) -> list:
+    """
+    Safe default packaging assumptions (you can refine later).
+    """
+    if total_qty <= 0:
+        total_qty = 1
+
+    # estimate 1.5kg per bottle
+    weight = max(1.0, total_qty * 1.5)
+
+    return [{
+        "submitted_length_cm": float(os.getenv("SL_PARCEL_LEN_CM", "35")),
+        "submitted_width_cm": float(os.getenv("SL_PARCEL_W_CM", "25")),
+        "submitted_height_cm": float(os.getenv("SL_PARCEL_H_CM", "15")),
+        "submitted_weight_kg": float(weight),
+    }]
+
+def get_rates(delivery_address: dict, declared_value: int = 1500) -> dict:
+    """
+    Calls Shiplogic:
       POST https://api.shiplogic.com/rates
-    Auth:
       Authorization: Bearer <token>
 
-    Env var expected:
-      SHIPLOGIC_API_KEY  (or TCG_API_KEY if you stored it that way)
-
-    Returns JSON response dict.
-    Raises Exception on non-200/201 responses with server message.
+    Env:
+      SHIPLOGIC_API_KEY  (or TCG_API_KEY if that’s what you used)
     """
-    api_key = os.getenv("SHIPLOGIC_API_KEY") or os.getenv("TCG_API_KEY") or ""
+    api_key = (os.getenv("SHIPLOGIC_API_KEY") or os.getenv("TCG_API_KEY") or "").strip()
     if not api_key:
-        raise Exception("Missing Shiplogic API key. Set SHIPLOGIC_API_KEY (or TCG_API_KEY) on Render.")
+        raise Exception("Missing Shiplogic API key. Set SHIPLOGIC_API_KEY on Render (or TCG_API_KEY).")
 
-    url = os.getenv("SHIPLOGIC_RATES_URL", "https://api.shiplogic.com/rates")
+    collection_address = _collection_address_from_env()
 
-    # Ensure dates exist (Shiplogic requires min dates in many accounts)
-    payload = dict(payload)
-    payload.setdefault("collection_min_date", _today_yyyy_mm_dd())
-    payload.setdefault("delivery_min_date", _today_yyyy_mm_dd())
+    # Validate collection address (prevents 404/no routes)
+    required = ["street_address", "city", "zone", "code"]
+    for k in required:
+        if not collection_address.get(k):
+            raise Exception(f"Store (collection) address missing '{k}'. Set SL_FROM_* env vars on Render.")
+
+    # Count total qty from cart lines if present in delivery_address metadata
+    total_qty = int(delivery_address.pop("_total_qty", 1))
+
+    payload = {
+        "collection_address": collection_address,
+        "delivery_address": delivery_address,
+        "parcels": _parcels_default(total_qty),
+        "declared_value": int(declared_value),
+        "collection_min_date": _today(),
+        "delivery_min_date": _today(),
+    }
 
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
     }
 
-    r = requests.post(url, json=payload, headers=headers, timeout=30)
-
-    # Shiplogic commonly returns 200, but handle 201 as well.
+    r = requests.post(SHIPLOGIC_RATES_URL, json=payload, headers=headers, timeout=30)
     if r.status_code not in (200, 201):
-        # Provide useful error text
         raise Exception(f"Shiplogic rates failed ({r.status_code}): {r.text}")
 
     return r.json()
