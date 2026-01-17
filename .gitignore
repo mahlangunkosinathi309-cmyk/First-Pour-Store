@@ -1,5 +1,26 @@
-venv/
-.env
-store.db
+﻿# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.log
+
+# Virtual env
+venv/
+.venv/
+ENV/
+env/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local secrets
+.env
+
+# Local database / uploads
+store.db
+uploads/
