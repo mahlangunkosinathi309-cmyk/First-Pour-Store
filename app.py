@@ -338,9 +338,21 @@ def yoco_start():
             "delivery_cents": delivery_fee,
         },
         "lineItems": [
-            {"name": l["name"], "quantity": l["qty"], "unitPrice": l["unit_cents"]}
-            for l in lines
-        ],
+    {
+        "displayName": l["name"],
+        "quantity": l["qty"],
+        "pricingDetails": {
+            "price": l["unit_cents"],
+            "currency": "ZAR",
+        },
+
+        # keep these too (harmless, helps if YOCO accepts older fields)
+        "name": l["name"],
+        "unitPrice": l["unit_cents"],
+    }
+    for l in lines
+],
+
     }
 
     headers = {
