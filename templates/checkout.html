@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Checkout | First Pour</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <style>
+    .banner-error{background:#3a1212;border:1px solid #7a2b2b;color:#ffd6d6;padding:12px 14px;border-radius:12px;margin:12px 0;}
+    .banner-ok{background:#0f2a18;border:1px solid #2e6b44;color:#d6ffe6;padding:12px 14px;border-radius:12px;margin:12px 0;}
+    .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+    @media (max-width: 900px){.grid3{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+    input, select{width:100%}
+    .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  </style>
 </head>
 <body>
   <div class="container" style="max-width: 980px;">
@@ -16,34 +25,29 @@
           <div class="brand-sub">First pour of something greater</div>
         </div>
       </a>
+
       <div class="topbar-right">
         <a class="btn btn-ghost" href="/">Back to shop</a>
-        <a class="btn btn-ghost" href="/checkout">
-          Cart
-          {% if cart_qty and cart_qty > 0 %}
-            <span class="badge">{{ cart_qty }}</span>
-          {% endif %}
-        </a>
-        <a class="btn" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
+        <a class="btn btn-ghost" href="/checkout">Cart ({{ cart_count }})</a>
+        <a class="whatsapp" target="_blank" href="https://wa.me/{{ whatsapp_number }}">WhatsApp us</a>
       </div>
     </div>
 
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <div class="flash">
-          {% for m in messages %}
-            <div class="flash-item">{{ m }}</div>
-          {% endfor %}
-        </div>
-      {% endif %}
-    {% endwith %}
-
     <h1 style="margin-top:18px;">Checkout</h1>
 
+    {% if cg_error %}
+      <div class="banner-error">{{ cg_error }}</div>
+    {% endif %}
+
+    {% if cg_quote_text %}
+      <div class="banner-ok">Courier Guy quote loaded: <strong>{{ cg_quote_text }}</strong></div>
+    {% endif %}
+
     {% if not lines %}
-      <p>Your cart is empty.</p>
+      <p>Your cart is empty. Go back and add products.</p>
       <a class="btn" href="/">Back to shop</a>
     {% else %}
+
       <div class="card" style="margin-top:14px;">
         <h2>Your items</h2>
 
@@ -54,54 +58,97 @@
                 <strong>{{ l.name }}</strong>
                 <div class="muted">{{ l.unit_display }} × {{ l.qty }}</div>
               </div>
-              <div class="line-price">{{ "R" ~ (l.line_cents/100) }}</div>
+              <div class="line-price">R{{ (l.line_cents/100)|round(0) }}</div>
             </div>
           {% endfor %}
         </div>
 
         <hr/>
 
-        <form method="POST" class="form">
-          <div class="grid">
+        <form method="POST" action="/checkout/details" class="form">
+          <div class="grid3">
             <div>
-              <label>Delivery</label>
+              <label>Delivery method</label>
               <select name="delivery_method">
                 <option value="pickup" {% if delivery_method=="pickup" %}selected{% endif %}>Pickup (Free)</option>
-                <option value="delivery" {% if delivery_method=="delivery" %}selected{% endif %}>Delivery (R80)</option>
+                <option value="flat" {% if delivery_method=="flat" %}selected{% endif %}>Delivery (R80)</option>
+                <option value="courier_guy" {% if delivery_method=="courier_guy" %}selected{% endif %}>Delivery (Courier Guy quote)</option>
               </select>
             </div>
 
             <div>
               <label>Your name</label>
-              <input name="customer_name" placeholder="e.g. Nkosi" value="{{ session.get('customer_name','') }}">
+              <input name="customer_name" value="{{ customer_name }}" placeholder="e.g. Nkosi">
             </div>
 
             <div>
               <label>Phone</label>
-              <input name="customer_phone" placeholder="e.g. 07..." value="{{ session.get('customer_phone','') }}">
-            </div>
-
-            <div>
-              <label>Address (if delivery)</label>
-              <input name="customer_address" placeholder="Street, suburb, city" value="{{ session.get('customer_address','') }}">
+              <input name="customer_phone" value="{{ customer_phone }}" placeholder="e.g. 07...">
             </div>
           </div>
 
-          <button class="btn" type="submit">Update details</button>
+          <div class="grid3" style="margin-top:10px;">
+            <div>
+              <label>Email</label>
+              <input name="customer_email" value="{{ customer_email }}" placeholder="you@email.com">
+            </div>
+            <div>
+              <label>Street address (delivery)</label>
+              <input name="cg_street" value="{{ cg_street }}" placeholder="Street + number">
+            </div>
+            <div>
+              <label>Suburb / local area</label>
+              <input name="cg_suburb" value="{{ cg_suburb }}" placeholder="Suburb">
+            </div>
+          </div>
+
+          <div class="grid3" style="margin-top:10px;">
+            <div>
+              <label>City</label>
+              <input name="cg_city" value="{{ cg_city }}" placeholder="City">
+            </div>
+            <div>
+              <label>Postal code</label>
+              <input name="cg_postal" value="{{ cg_postal }}" placeholder="0000">
+            </div>
+            <div>
+              <label>Province</label>
+              <select name="cg_province">
+                {% for p in provinces %}
+                  <option value="{{ p }}" {% if cg_province==p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn" type="submit">Save details</button>
+
+            {% if delivery_method == "courier_guy" %}
+              <form action="/courier/quote" method="POST">
+                <button class="btn btn-ghost" type="submit">Get delivery quote</button>
+              </form>
+            {% endif %}
+          </div>
+
+          <p class="muted" style="margin-top:10px;">
+            If you chose “Courier Guy quote”, click <strong>Save details</strong> first, then <strong>Get delivery quote</strong>.
+          </p>
         </form>
 
-        <div class="totals">
+        <div class="totals" style="margin-top:10px;">
           <div class="row"><span>Subtotal</span><span>{{ subtotal_display }}</span></div>
           <div class="row"><span>Delivery</span><span>{{ delivery_fee_display }}</span></div>
           <div class="row total"><span>Total</span><span>{{ total_display }}</span></div>
         </div>
 
-        <div class="actions">
+        <div class="actions" style="margin-top:16px; display:flex; gap:10px; flex-wrap:wrap;">
           <form action="/cart/clear" method="POST">
             <button class="btn btn-ghost" type="submit">Clear cart</button>
           </form>
 
-          <a class="btn btn-ghost" target="_blank" href="https://wa.me/{{ whatsapp_number }}">
+          <a class="btn btn-ghost" target="_blank"
+             href="https://wa.me/{{ whatsapp_number }}?text={{ whatsapp_text|urlencode }}">
             Order via WhatsApp
           </a>
 
@@ -110,13 +157,16 @@
               <button class="btn" type="submit">Pay with Yoco</button>
             </form>
           {% else %}
-            <div class="muted" style="align-self:center;">Yoco not connected yet.</div>
+            <div class="muted" style="align-self:center;">
+              Yoco not connected yet (set YOCO_SECRET_KEY on Render).
+            </div>
           {% endif %}
         </div>
 
         <p class="muted" style="margin-top:10px;">
           Please enjoy responsibly. Not for sale to persons under 18.
         </p>
+
       </div>
     {% endif %}
   </div>
