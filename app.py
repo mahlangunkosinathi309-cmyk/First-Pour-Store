@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import os
 import uuid
 from urllib.parse import quote
@@ -36,8 +36,7 @@ PRODUCTS = [
     {"id": "gin", "name": "First Pour – London Dry Gin", "price": 35000, "price_display": "R350", "desc": "Crisp · Aromatic · Classic", "img": "first-pour-gin.jpg"},
     {"id": "vodka", "name": "First Pour – Vanilla Vodka", "price": 35000, "price_display": "R350", "desc": "Smooth · Sweet · Velvety", "img": "first-pour-vodka.jpg"},
     {"id": "whitewine", "name": "First Pour – Sweet White Wine", "price": 20000, "price_display": "R200", "desc": "Light · Juicy · Sweet", "img": "first-pour-white-wine.jpg"},
-    {"id": "redwine","name": "First Pour – Sweet Red Wine","price": 20000,"price_display": "R200","desc": "Smooth · Juicy · Sweet","img": "first-pour-red-wine.jpg"},   
-
+    {"id": "redwine", "name": "First Pour – Sweet Red Wine", "price": 20000, "price_display": "R200", "desc": "Smooth · Juicy · Sweet", "img": "first-pour-red-wine.jpg"},
 ]
 
 def product_by_id(pid: str):
@@ -72,7 +71,14 @@ def cart_lines(cart: dict):
             q = 0
         if q <= 0:
             continue
-        lines.append({"id": pid, "name": p["name"], "qty": q, "unit_cents": p["price"], "unit_display": p["price_display"], "line_cents": p["price"] * q})
+        lines.append({
+            "id": pid,
+            "name": p["name"],
+            "qty": q,
+            "unit_cents": p["price"],
+            "unit_display": p["price_display"],
+            "line_cents": p["price"] * q
+        })
     return lines
 
 def cents_to_zar(cents: int) -> str:
@@ -191,6 +197,7 @@ def checkout():
         f"%0ATotal: {quote(cents_to_zar(total))}"
     )
 
+    # ✅ ADDITIVE ONLY: pass quote + totals so checkout.html can print delivery summary card
     return render_template(
         "checkout.html",
         whatsapp_number=WHATSAPP_NUMBER,
@@ -202,6 +209,7 @@ def checkout():
         total_display=cents_to_zar(total),
         total_cents=total,
         yoco_enabled=bool(YOCO_SECRET_KEY),
+
         cg_error=cg_error,
         cg_quote_text=cg_quote_text,
         provinces=PROVINCES,
@@ -214,6 +222,12 @@ def checkout():
         cg_postal=cg_postal,
         cg_province=cg_province,
         whatsapp_text=whatsapp_text,
+
+        # NEW (SAFE) variables for Step 2 UI card
+        cg_quote_raw=cg_quote_raw,
+        delivery_fee_cents=delivery_fee,
+        subtotal_cents=subtotal,
+        total_with_delivery_cents=total,
     )
 
 @app.route("/checkout/details", methods=["POST"])
