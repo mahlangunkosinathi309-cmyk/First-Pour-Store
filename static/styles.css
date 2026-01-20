@@ -1,4 +1,4 @@
-﻿:root{
+:root{
   --bg:#070A12;
   --card:rgba(255,255,255,.06);
   --stroke:rgba(255,255,255,.12);
@@ -68,7 +68,17 @@ h1{font-size:56px;line-height:1.02;margin:0 0 10px}
   overflow:hidden;
   min-height:320px;
 }
-.hero-image-card img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ✅ FIX: show full bottle (no cropping) */
+.hero-image-card img{
+  width:100%;
+  height:100%;
+  object-fit:contain;        /* changed from cover */
+  object-position:center;
+  display:block;
+  background:#f7f5ee;        /* clean product backdrop */
+  padding:14px;              /* breathing room like hero look */
+}
 
 .section{margin-top:26px}
 .section-head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
@@ -85,7 +95,18 @@ h1{font-size:56px;line-height:1.02;margin:0 0 10px}
 }
 
 .product{overflow:hidden}
-.product-img{width:100%;height:220px;object-fit:cover;display:block}
+
+/* ✅ FIX: product images must show full bottle like hero */
+.product-img{
+  width:100%;
+  height:260px;              /* slightly taller so bottles look premium */
+  object-fit:contain;        /* changed from cover */
+  object-position:center;
+  display:block;
+  background:#f7f5ee;        /* matches the clean image area */
+  padding:12px;              /* prevents edges touching the frame */
+}
+
 .product-body{padding:14px}
 .product-name{font-weight:800}
 .product-desc{color:var(--muted);margin-top:6px;font-size:13px}
@@ -155,3 +176,9 @@ input,select{
 .newsletter input{flex:1;min-width:240px}
 
 .footer{margin-top:28px;padding:16px 0;border-top:1px solid rgba(255,255,255,.08)}
+
+/* ✅ Mobile tune so product cards still look good */
+@media (max-width:600px){
+  .product-img{height:230px;padding:10px}
+  .hero-image-card img{padding:10px}
+}
